@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wispr Clone — Voice typing for your Mac</title>
+<meta name="description" content="Hold a key, speak, and your words appear in any app. On-device voice dictation for Apple Silicon Macs. Free." />
+<link rel="icon" href="icon.png" />
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --bg-soft: #141a2e;
+    --card: #1a2138;
+    --text: #eef1fa;
+    --muted: #9aa3bf;
+    --accent: #6b51f2;
+    --accent2: #458cfb;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; }
+  .brand img { width: 34px; height: 34px; border-radius: 8px; }
+  .nav-links { display: flex; gap: 28px; color: var(--muted); font-size: 15px; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 70px 0 60px;
+    background:
+      radial-gradient(900px 480px at 50% -10%, rgba(107,81,242,0.28), transparent 60%),
+      radial-gradient(700px 400px at 80% 10%, rgba(69,140,251,0.18), transparent 55%);
+  }
+  .hero img.app-icon {
+    width: 116px; height: 116px; border-radius: 26px; margin-bottom: 28px;
+    box-shadow: 0 18px 50px rgba(107,81,242,0.45);
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 60px);
+    line-height: 1.08; letter-spacing: -0.02em; font-weight: 800;
+    max-width: 760px; margin: 0 auto 20px;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p.sub {
+    font-size: clamp(17px, 2.4vw, 21px); color: var(--muted);
+    max-width: 600px; margin: 0 auto 36px;
+  }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #fff; font-weight: 700; font-size: 17px;
+    padding: 16px 32px; border-radius: 14px;
+    box-shadow: 0 12px 34px rgba(107,81,242,0.5);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(107,81,242,0.6); }
+  .cta svg { width: 20px; height: 20px; }
+  .meta { margin-top: 16px; color: var(--muted); font-size: 14px; }
+
+  /* Section */
+  section { padding: 64px 0; }
+  h2 { font-size: clamp(26px, 4vw, 36px); text-align: center; letter-spacing: -0.02em; margin-bottom: 14px; }
+  .lead { text-align: center; color: var(--muted); max-width: 620px; margin: 0 auto 48px; }
+
+  /* Features */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+  }
+  .card .ico {
+    width: 46px; height: 46px; border-radius: 12px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    background: linear-gradient(135deg, rgba(107,81,242,0.25), rgba(69,140,251,0.25));
+  }
+  .card h3 { font-size: 18px; margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: 15px; }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .step { text-align: center; }
+  .step .num {
+    width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+  }
+  .step h3 { font-size: 17px; margin-bottom: 6px; }
+  .step p { color: var(--muted); font-size: 15px; }
+  kbd {
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-bottom-width: 2px; border-radius: 6px; padding: 2px 8px;
+    font-family: ui-monospace, SFMono-Regular, monospace; font-size: 14px;
+  }
+
+  /* Bottom CTA */
+  .final {
+    text-align: center; background: var(--bg-soft);
+    border: 1px solid var(--border); border-radius: 24px; padding: 56px 24px;
+  }
+
+  footer { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
+  .disclaimer { max-width: 640px; margin: 14px auto 0; font-size: 12px; opacity: 0.75; }
+
+  @media (max-width: 760px) {
+    .grid, .steps { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <div class="brand"><img src="icon.png" alt="" /> Wispr Clone</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#download">Download</a>
+      </div>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="wrap">
+      <img class="app-icon" src="icon@2x.png" alt="Wispr Clone icon" />
+      <h1>Just talk. <span class="grad">Your words type themselves.</span></h1>
+      <p class="sub">Hold one key, speak naturally, and your words appear in any app on your Mac — email, Slack, docs, anywhere. All on-device.</p>
+      <a class="cta" id="download-top" href="#download">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4L11 13.6V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+        Download for Mac
+      </a>
+      <div class="meta">Free · macOS 14+ · Apple Silicon (M-series)</div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Dictation that feels invisible</h2>
+      <p class="lead">No window to switch to, no buttons to click. It works wherever your cursor is.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="ico">🎙️</div>
+          <h3>Talk anywhere</h3>
+          <p>Works in every app — your browser, Messages, Notes, code editors, search bars. If you can type there, you can talk there.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🔒</div>
+          <h3>On-device & private</h3>
+          <p>Your voice is transcribed locally on your Mac using Apple's speech engine. Nothing is uploaded. Works offline.</p>
+        </div>
+        <div class="card">
+          <div class="ico">✨</div>
+          <h3>AI cleanup (optional)</h3>
+          <p>Turn on Claude cleanup to automatically remove “um”s, fix grammar, and polish punctuation as you go.</p>
+        </div>
+        <div class="card">
+          <div class="ico">⚡</div>
+          <h3>Instant</h3>
+          <p>Release the key and your text is pasted in a blink. No round-trips, no waiting.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🍏</div>
+          <h3>Built for Apple Silicon</h3>
+          <p>Native Swift app tuned for M-series chips. Lightweight, fast, and lives quietly in your menu bar.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🆓</div>
+          <h3>Free</h3>
+          <p>No subscription, no account. Download it and start talking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" style="background: var(--bg-soft);">
+    <div class="wrap">
+      <h2>Three steps to talking</h2>
+      <p class="lead">Set it up once, then forget it's even there.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3>Install</h3>
+          <p>Download the app and drag it to your Applications folder.</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3>Grant access</h3>
+          <p>Allow Microphone, Speech Recognition, and Accessibility when asked.</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3>Hold &amp; talk</h3>
+          <p>Hold <kbd>Right ⌥ Option</kbd>, speak, release. Your words appear.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <div class="final">
+        <img src="icon@2x.png" alt="" style="width:80px;height:80px;border-radius:18px;margin-bottom:20px;" />
+        <h2>Ready to stop typing?</h2>
+        <p class="lead">Download Wispr Clone and try it in the next app you open.</p>
+        <!-- Replace href with your GitHub Release .dmg URL once published. -->
+        <a class="cta" id="download-main" href="#">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4L11 13.6V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+          Download for Mac (.dmg)
+        </a>
+        <div class="meta">Free · macOS 14+ · Apple Silicon</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      Wispr Clone — a personal voice-typing app for macOS.
+      <div class="disclaimer">
+        Not affiliated with, endorsed by, or connected to Wispr Flow or Wispr AI.
+        This is an independent hobby project inspired by the concept of voice dictation.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Point both download buttons at the real .dmg once you publish a GitHub Release.
+    // e.g. https://github.com/USER/REPO/releases/latest/download/Wispr.Clone.dmg
+    var DOWNLOAD_URL = "#";
+    if (DOWNLOAD_URL !== "#") {
+      document.getElementById("download-top").setAttribute("href", DOWNLOAD_URL);
+      document.getElementById("download-main").setAttribute("href", DOWNLOAD_URL);
+    }
+  </script>
+</body>
+</html>

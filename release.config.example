@@ -1,0 +1,20 @@
+# Copy this file to "release.config" and fill in YOUR values.
+# release.config is gitignored — never commit your credentials.
+#
+# You get all of these after enrolling in the Apple Developer Program ($99/yr)
+# at https://developer.apple.com and creating a "Developer ID Application"
+# certificate in Xcode or at https://developer.apple.com/account/resources/certificates
+
+# 1) Your signing identity. Find it by running:  security find-identity -v -p codesigning
+#    It looks like:  Developer ID Application: Your Name (ABCDE12345)
+SIGN_IDENTITY="Developer ID Application: Your Name (ABCDE12345)"
+
+# 2) Your 10-character Team ID (the part in parentheses above).
+TEAM_ID="ABCDE12345"
+
+# 3) The Apple ID email you enrolled with.
+APPLE_ID="you@example.com"
+
+# 4) An APP-SPECIFIC password (NOT your real Apple ID password).
+#    Create one at https://account.apple.com  →  Sign-In and Security  →  App-Specific Passwords
+APP_PASSWORD="abcd-efgh-ijkl-mnop"
