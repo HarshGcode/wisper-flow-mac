@@ -3,3 +3,4 @@ build/
 release.config
 tools/AppIcon.iconset/
 .DS_Store
+public/
