@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { width: 260px; margin: 0; font: 14px -apple-system, system-ui, sans-serif;
+         background: #0c0f1a; color: #eef1fa; padding: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-bottom: 14px; }
+  .brand img { width: 26px; height: 26px; border-radius: 7px; }
+  button.toggle { width: 100%; border: 0; border-radius: 12px; padding: 12px;
+    font-size: 15px; font-weight: 700; color: #fff; cursor: pointer;
+    background: linear-gradient(90deg,#6b51f2,#458cfb); }
+  button.toggle.rec { background: linear-gradient(90deg,#e0245e,#ff5b7f); }
+  .hint { color: #9aa3bf; font-size: 12.5px; margin-top: 12px; line-height: 1.5; }
+  kbd { background:#1a2138; border:1px solid rgba(255,255,255,.12); border-bottom-width:2px;
+        border-radius:5px; padding:1px 6px; font-family: ui-monospace, monospace; font-size:12px; }
+  a { color: #7aa8ff; }
+  .err { color:#ff8aa6; font-size:12.5px; margin-top:10px; display:none; }
+</style>
+</head>
+<body>
+  <div class="brand"><img src="icons/icon48.png" alt="" /> Wispr Clone</div>
+  <button id="toggle" class="toggle">🎙️ Start dictation</button>
+  <div class="err" id="err"></div>
+  <div class="hint">
+    Click a text field on the page, then start. Shortcut: <kbd id="shortcut">⌘⇧Y</kbd><br />
+    First time? <a href="#" id="setup">Enable microphone →</a>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
