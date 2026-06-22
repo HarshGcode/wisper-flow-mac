@@ -118,6 +118,21 @@
     border: 1px solid var(--border); border-radius: 24px; padding: 56px 24px;
   }
 
+  .install-note {
+    text-align: left; max-width: 520px; margin: 28px auto 0;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .install-note strong { color: var(--text); }
+  .install-note ol { margin: 12px 0 0 18px; color: var(--muted); font-size: 14.5px; }
+  .install-note ol li { margin-bottom: 8px; }
+  .install-note code {
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 5px; padding: 1px 6px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px;
+  }
+  .install-note .why { margin-top: 14px; font-size: 13px; color: var(--muted); opacity: 0.85; }
+  .install-note .why a { color: var(--accent2); text-decoration: underline; }
+
   footer { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
   .disclaimer { max-width: 640px; margin: 14px auto 0; font-size: 12px; opacity: 0.75; }
 
@@ -227,8 +242,16 @@
           Download for Mac (.dmg)
         </a>
         <div class="meta">Free · macOS 14+ · Apple Silicon</div>
-        <div class="meta" style="margin-top:8px;font-size:13px;opacity:0.8;">
-          First launch: right-click the app ▸ <strong>Open</strong> to get past the macOS warning.
+
+        <div class="install-note">
+          <strong>📋 How to install (first time)</strong>
+          <ol>
+            <li>Open the downloaded <code>Wispr-Clone.dmg</code> and drag <strong>Wispr Clone</strong> into your <strong>Applications</strong> folder.</li>
+            <li>Open Applications and double-click <strong>Wispr Clone</strong>. macOS will block it — that's expected.</li>
+            <li>Go to <strong>System Settings ▸ Privacy &amp; Security</strong>, scroll down, and click <strong>“Open Anyway”</strong> next to Wispr Clone. Confirm once.</li>
+            <li>When it runs, allow <strong>Microphone</strong>, <strong>Speech Recognition</strong>, and <strong>Accessibility</strong> when asked, then relaunch.</li>
+          </ol>
+          <p class="why">Why the warning? This app isn't notarized by Apple yet, so macOS asks you to approve it manually. It's safe — the code is open source on <a href="https://github.com/HarshGcode/wisper-flow-mac">GitHub</a>.</p>
         </div>
       </div>
     </div>
