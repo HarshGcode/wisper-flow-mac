@@ -227,6 +227,9 @@
           Download for Mac (.dmg)
         </a>
         <div class="meta">Free · macOS 14+ · Apple Silicon</div>
+        <div class="meta" style="margin-top:8px;font-size:13px;opacity:0.8;">
+          First launch: right-click the app ▸ <strong>Open</strong> to get past the macOS warning.
+        </div>
       </div>
     </div>
   </section>
@@ -244,10 +247,13 @@
   <script>
     // Point both download buttons at the real .dmg once you publish a GitHub Release.
     // e.g. https://github.com/USER/REPO/releases/latest/download/Wispr.Clone.dmg
-    var DOWNLOAD_URL = "#";
+    var DOWNLOAD_URL = "https://github.com/HarshGcode/wisper-flow-mac/releases/latest/download/Wispr-Clone.dmg";
     if (DOWNLOAD_URL !== "#") {
-      document.getElementById("download-top").setAttribute("href", DOWNLOAD_URL);
-      document.getElementById("download-main").setAttribute("href", DOWNLOAD_URL);
+      ["download-top", "download-main"].forEach(function (id) {
+        var el = document.getElementById(id);
+        el.setAttribute("href", DOWNLOAD_URL);
+        el.setAttribute("download", "");
+      });
     }
   </script>
 </body>
