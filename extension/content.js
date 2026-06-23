@@ -15,6 +15,18 @@
     if (isEditable(e.target)) lastEditable = e.target;
   }, true);
 
+  // Listen for the shortcut IN THE PAGE so starting recognition happens inside a
+  // real user gesture — Chrome blocks the microphone prompt otherwise.
+  // Default: Ctrl/Cmd + Shift + Y.
+  document.addEventListener("keydown", (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.shiftKey && (e.code === "KeyY" || e.key.toLowerCase() === "y")) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle();
+    }
+  }, true);
+
   // --- editable detection + insertion --------------------------------------
 
   function isEditable(el) {

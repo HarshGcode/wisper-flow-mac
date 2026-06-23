@@ -39,10 +39,6 @@ function notify(isRecording, error) {
   chrome.runtime.sendMessage({ type: "state", recording: isRecording, error }).catch(() => {});
 }
 
-chrome.commands.onCommand.addListener((command) => {
-  if (command === "toggle-dictation") toggle();
-});
-
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "toggle-from-popup") { toggle(); return; }
   if (msg.type === "getState") { sendResponse({ recording }); return true; }
