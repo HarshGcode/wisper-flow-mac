@@ -8,7 +8,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var recording = false
     private var partialItem: NSMenuItem!
 
+    private var integrity: IntegrityGuard.Status = .unknown("not checked")
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Self-protection FIRST: if the app was tampered with (malware injected
+        // after signing), warn the user and refuse to run.
+        integrity = IntegrityGuard.check()
+        if !integrity.isSafe {
+            showAlert(
+                title: "⚠️ Security warning — app may be modified",
+                text: "Wispr Clone failed its integrity check — its files appear to have been changed since it was built, which can be a sign of malware. For your safety it will not start.\n\nRe-download a fresh copy from the official source."
+            )
+            NSApp.terminate(nil)
+            return
+        }
+
         setupStatusItem()
         wireServices()
 
@@ -41,6 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hint = NSMenuItem(title: "Hold Right ⌥ (Option) to dictate", action: nil, keyEquivalent: "")
         hint.isEnabled = false
         menu.addItem(hint)
+
+        let integrityItem = NSMenuItem(title: integrity.menuLabel, action: nil, keyEquivalent: "")
+        integrityItem.isEnabled = false
+        menu.addItem(integrityItem)
 
         partialItem = NSMenuItem(title: "Idle", action: nil, keyEquivalent: "")
         partialItem.isEnabled = false
