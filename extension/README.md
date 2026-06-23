@@ -10,26 +10,24 @@ and speak — your words are typed in. Works in Gmail, X, ChatGPT, search bars, 
 3. Click **Load unpacked** and select this **`extension/`** folder.
 4. The Wispr Clone icon appears in your toolbar.
 
-## First-time setup
-
-1. Click the toolbar icon → **Enable microphone →** (opens the setup page).
-2. Click **Enable microphone** and choose **Allow**. (One time only.)
-
 ## Use
 
-1. Click into any text box on a web page.
-2. Press **⌘⇧Y** (Mac) / **Ctrl+Shift+Y** (Win/Linux), or click the toolbar icon → **Start**.
-3. Speak. Press again to stop.
+1. **If you have tabs already open, reload them once** so the extension attaches.
+2. Click into any text box on a web page.
+3. Press **⌘⇧Y** (Mac) / **Ctrl+Shift+Y** (Win/Linux), or click the toolbar icon → **Start**.
+4. **The first time on each website**, Chrome asks for the microphone — click **Allow**.
+5. Speak. Press again to stop.
 
 Change the shortcut at `chrome://extensions/shortcuts`.
 
 ## How it works
 
 - A keyboard command (or the popup) toggles dictation.
-- Speech recognition runs in an **offscreen document** (stable extension origin →
-  microphone permission is granted once, not per-site).
-- Recognized text is relayed to the active tab's content script, which inserts it
-  into the focused `input` / `textarea` / `contenteditable` element.
+- The background worker injects `content.js` into the active tab (so it works even
+  on tabs opened before the extension was loaded), then sends a toggle.
+- The content script runs the browser's `webkitSpeechRecognition` **in the page**
+  and inserts recognized text into the focused `input` / `textarea` /
+  `contenteditable` element. Chrome asks for the mic once per website.
 
 ## Note on privacy
 

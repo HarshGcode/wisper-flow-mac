@@ -9,29 +9,34 @@
   .brand { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:800; margin-bottom: 8px; }
   .brand img { width: 36px; height: 36px; border-radius: 9px; }
   h2 { margin: 28px 0 8px; font-size: 17px; }
-  button { border:0; border-radius:12px; padding:13px 22px; font-size:15px; font-weight:700;
-           color:#fff; cursor:pointer; background: linear-gradient(90deg,#6b51f2,#458cfb); }
-  .status { margin-top:14px; font-weight:600; }
-  .ok { color:#5fe0a0; } .bad { color:#ff8aa6; }
   ol { color:#c7cce0; } kbd { background:#1a2138; border:1px solid rgba(255,255,255,.12);
        border-bottom-width:2px; border-radius:5px; padding:1px 6px; font-family:ui-monospace,monospace; font-size:13px; }
   .muted { color:#9aa3bf; font-size:13px; }
+  .tip { background:#141a2e; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px 18px; margin-top:10px; }
 </style>
 </head>
 <body>
   <div class="brand"><img src="icons/icon128.png" alt="" /> Wispr Clone</div>
   <p class="muted">Voice typing for your browser.</p>
 
-  <h2>1. Enable the microphone (one time)</h2>
-  <p>Click below and choose <strong>Allow</strong>. This grants mic access to the extension once, so you won't be asked on every website.</p>
-  <button id="enable">🎙️ Enable microphone</button>
-  <div class="status" id="status"></div>
-
-  <h2>2. How to use</h2>
+  <h2>How to use</h2>
   <ol>
     <li>Click into any text box on a web page (Gmail, X, ChatGPT, a search bar…).</li>
-    <li>Press <kbd id="shortcut">⌘⇧Y</kbd> (or click the toolbar icon → Start).</li>
-    <li>Speak. Your words are typed in. Press the shortcut again to stop.</li>
+    <li>Press <kbd id="shortcut">⌘⇧Y</kbd> (or click the toolbar icon → <strong>Start</strong>).</li>
+    <li><strong>The first time on each website</strong>, Chrome asks for the microphone — click <strong>Allow</strong>.</li>
+    <li>Speak. Your words are typed into the field. Press the shortcut again to stop.</li>
+  </ol>
+
+  <div class="tip">
+    💡 <strong>Just installed?</strong> If you press the shortcut on a tab that was already
+    open, <strong>reload that tab once</strong> so the extension can attach to it.
+  </div>
+
+  <h2>Troubleshooting</h2>
+  <ol>
+    <li><strong>Nothing happens:</strong> reload the page, then try again.</li>
+    <li><strong>"Allow microphone" message:</strong> click the 🎤/lock icon in the address bar and allow the mic for that site.</li>
+    <li><strong>Only works on secure sites:</strong> speech needs <kbd>https://</kbd> pages (most sites are).</li>
   </ol>
 
   <h2>Change the shortcut</h2>
