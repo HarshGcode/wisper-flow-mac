@@ -112,8 +112,11 @@ def record_and_transcribe(icon):
             icon.icon = make_icon(active=True)
             while is_recording:
                 try:
-                    frames.append(source.stream.read(source.CHUNK, exception_on_overflow=False))
+                    # NOTE: SpeechRecognition's MicrophoneStream.read takes only the
+                    # chunk size (it passes exception_on_overflow=False internally).
+                    frames.append(source.stream.read(source.CHUNK))
                 except Exception:
+                    log("Audio read error:\n" + traceback.format_exc())
                     break
             audio = sr.AudioData(b"".join(frames), source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         log(f"Captured {len(frames)} audio chunks")
