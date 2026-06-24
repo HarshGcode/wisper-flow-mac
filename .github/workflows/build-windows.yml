@@ -32,10 +32,23 @@ jobs:
         run: |
           python -c "from PIL import Image; Image.open('tools/icon_1024.png').save('windows/wispr.ico', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])"
 
-      - name: Build standalone EXE
-        run: pyinstaller --onefile --noconsole --name WisprClone --icon windows/wispr.ico windows/wispr_windows.py
+      - name: Build standalone EXE (normal, no console)
+        run: >
+          pyinstaller --onefile --noconsole --name WisprClone
+          --icon windows/wispr.ico
+          --collect-all speech_recognition
+          --collect-all pyaudio
+          windows/wispr_windows.py
 
-      - name: Upload EXE to the v1.0 release
+      - name: Build debug EXE (shows a console with errors)
+        run: >
+          pyinstaller --onefile --console --name WisprClone-Debug
+          --icon windows/wispr.ico
+          --collect-all speech_recognition
+          --collect-all pyaudio
+          windows/wispr_windows.py
+
+      - name: Upload EXEs to the v1.0 release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload v1.0 dist/WisprClone.exe --clobber --repo ${{ github.repository }}
+        run: gh release upload v1.0 dist/WisprClone.exe dist/WisprClone-Debug.exe --clobber --repo ${{ github.repository }}

@@ -16,14 +16,45 @@ extension. (The Mac app uses Apple's on-device engine.)
 Setup + run:  see README.md in this folder.
 """
 
+import os
+import sys
 import threading
 import time
+import datetime
+import traceback
 
-import keyboard          # global hotkey
-import pyperclip         # clipboard (for pasting text)
-import speech_recognition as sr
-import pystray
-from PIL import Image, ImageDraw
+
+# ---- Logging (so errors are visible even in the no-console .exe) -------------
+def _log_dir():
+    # Next to the .exe when frozen, else next to this script.
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+LOG_PATH = os.path.join(_log_dir(), "wispr_clone_log.txt")
+
+
+def log(msg):
+    line = f"[{datetime.datetime.now():%H:%M:%S}] {msg}"
+    print(line, flush=True)
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+
+# Import third-party libs with clear errors if something is missing/broken.
+try:
+    import keyboard          # global hotkey
+    import pyperclip         # clipboard (for pasting text)
+    import speech_recognition as sr
+    import pystray
+    from PIL import Image, ImageDraw
+except Exception:
+    log("FATAL: a required library failed to import:\n" + traceback.format_exc())
+    raise
 
 # ---- Settings ---------------------------------------------------------------
 # Push-to-talk key. Hold it to dictate. Change this if you prefer another key
@@ -75,6 +106,7 @@ def record_and_transcribe(icon):
     global _status
     frames = []
     try:
+        log("Opening microphone…")
         with sr.Microphone() as source:
             _status = "Listening…"
             icon.icon = make_icon(active=True)
@@ -84,7 +116,9 @@ def record_and_transcribe(icon):
                 except Exception:
                     break
             audio = sr.AudioData(b"".join(frames), source.SAMPLE_RATE, source.SAMPLE_WIDTH)
+        log(f"Captured {len(frames)} audio chunks")
     except Exception as e:
+        log("Mic error:\n" + traceback.format_exc())
         _status = f"Mic error: {e}"
         icon.icon = make_icon(active=False)
         return
@@ -93,13 +127,17 @@ def record_and_transcribe(icon):
     _status = "Transcribing…"
     try:
         text = recognizer.recognize_google(audio, language=LANGUAGE)
+        log(f"Recognized: {text!r}")
         insert_text(text + " ")
         _status = "Idle"
     except sr.UnknownValueError:
+        log("No speech recognized")
         _status = "Didn't catch that"
     except sr.RequestError as e:
+        log("Network/API error:\n" + traceback.format_exc())
         _status = f"Network/API error: {e}"
     except Exception as e:
+        log("Transcribe error:\n" + traceback.format_exc())
         _status = f"Error: {e}"
 
 
@@ -130,11 +168,23 @@ def main():
     )
 
     # Register the push-to-talk hotkey.
+    log("Registering hotkey…")
     keyboard.on_press_key(HOTKEY, on_press(icon), suppress=False)
     keyboard.on_release_key(HOTKEY, on_release, suppress=False)
 
+    log("Tray icon starting — app is ready. Hold the hotkey to dictate.")
     icon.run()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        log("=== Wispr Clone (Windows) starting ===")
+        log(f"Hotkey: {HOTKEY}")
+        main()
+    except Exception:
+        log("FATAL on startup:\n" + traceback.format_exc())
+        # Keep a console window open so the user can read the error.
+        try:
+            input("\nAn error occurred (see above and wispr_clone_log.txt). Press Enter to exit…")
+        except Exception:
+            pass
