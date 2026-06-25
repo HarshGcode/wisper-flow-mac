@@ -5,10 +5,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let speech = SpeechService()
     private let hotkeys = HotkeyManager()
-    private let meeting = MeetingTranscriber()
+    let meeting = MeetingTranscriber()
+    var recordingPublic: Bool { recording }
     private var recording = false
     private var partialItem: NSMenuItem!
     private var meetingItem: NSMenuItem!
+
+    // Main window UI
+    var mainWindow: NSWindow?
+    var winStatusLabel: NSTextField?
+    var winMeetingButton: NSButton?
+    var winCleanupCheck: NSButton?
+    var winAutoPasteCheck: NSButton?
 
     private var integrity: IntegrityGuard.Status = .unknown("not checked")
 
@@ -40,6 +48,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ensureAccessibility()
         hotkeys.start()
         updateIcon()
+        setupMainWindow()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        // Keep running in the menu bar after the window is closed.
+        false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showMainWindow()
+        return true
     }
 
     // MARK: - Setup
@@ -171,7 +190,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sender.state = Settings.autoPaste ? .on : .off
     }
 
-    @objc private func toggleMeeting() {
+    @objc func toggleMeeting() {
         if meeting.isRunning {
             meeting.stop()
             meetingItem.title = "Start Meeting Transcription"
@@ -182,13 +201,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             partialItem.title = "📝 Meeting: transcribing…"
         }
         updateIcon()
+        refreshWindowUI()
     }
 
-    @objc private func openTranscripts() {
+    @objc func openTranscripts() {
         NSWorkspace.shared.open(MeetingTranscriber.transcriptsFolder)
     }
 
-    @objc private func setApiKey() {
+    @objc func setApiKey() {
         let alert = NSAlert()
         alert.messageText = "Anthropic API Key"
         alert.informativeText = "Used only for optional AI cleanup. Stored locally in your user defaults."
@@ -216,6 +236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: desc)
         button.image?.isTemplate = true
         button.contentTintColor = active ? .systemRed : nil
+        refreshWindowUI()
     }
 
     private func ensureAccessibility() {
