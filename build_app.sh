@@ -24,9 +24,19 @@ if [ -f tools/AppIcon.icns ]; then
     cp tools/AppIcon.icns "${BUNDLE}/Contents/Resources/AppIcon.icns"
 fi
 
-# SIGN_IDENTITY defaults to ad-hoc ("-"); release.sh overrides it with a
-# "Developer ID Application: …" identity for notarizable, publicly distributable builds.
-SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+# Pick a signing identity:
+#   1. Whatever the caller passed (release.sh uses a Developer ID).
+#   2. Else the stable "Wispr Clone Self-Signed" cert if present — this keeps the
+#      code signature identical across rebuilds, so the Accessibility permission
+#      survives and doesn't need re-granting every time.
+#   3. Else fall back to ad-hoc ("-").
+if [ -z "${SIGN_IDENTITY:-}" ]; then
+    if security find-identity -p codesigning 2>/dev/null | grep -q "Wispr Clone Self-Signed"; then
+        SIGN_IDENTITY="Wispr Clone Self-Signed"
+    else
+        SIGN_IDENTITY="-"
+    fi
+fi
 echo "==> Code signing (identity: ${SIGN_IDENTITY})…"
 codesign --force --deep \
     --sign "${SIGN_IDENTITY}" \
