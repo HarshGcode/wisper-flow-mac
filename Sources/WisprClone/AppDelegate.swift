@@ -5,8 +5,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let speech = SpeechService()
     private let hotkeys = HotkeyManager()
+    private let meeting = MeetingTranscriber()
     private var recording = false
     private var partialItem: NSMenuItem!
+    private var meetingItem: NSMenuItem!
 
     private var integrity: IntegrityGuard.Status = .unknown("not checked")
 
@@ -76,6 +78,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         autoPaste.state = Settings.autoPaste ? .on : .off
         menu.addItem(autoPaste)
 
+        menu.addItem(.separator())
+
+        meetingItem = NSMenuItem(title: "Start Meeting Transcription", action: #selector(toggleMeeting), keyEquivalent: "")
+        meetingItem.target = self
+        menu.addItem(meetingItem)
+
+        let openTranscripts = NSMenuItem(title: "Open Transcripts Folder", action: #selector(openTranscripts), keyEquivalent: "")
+        openTranscripts.target = self
+        menu.addItem(openTranscripts)
+
         let setKey = NSMenuItem(title: "Set Anthropic API Key…", action: #selector(setApiKey), keyEquivalent: "")
         setKey.target = self
         menu.addItem(setKey)
@@ -101,12 +113,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         speech.onFinal = { [weak self] text in
             self?.handleFinal(text)
         }
+
+        meeting.onLine = { [weak self] line in
+            self?.partialItem.title = "📝 \(line)"
+        }
+        meeting.onError = { [weak self] msg in
+            self?.partialItem.title = "Meeting error: \(msg)"
+        }
     }
 
     // MARK: - Recording flow
 
     private func startRecording() {
         guard !recording else { return }
+        guard !meeting.isRunning else { return }  // mic is busy with the meeting transcript
         recording = true
         partialItem.title = "Listening…"
         updateIcon()
@@ -151,6 +171,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sender.state = Settings.autoPaste ? .on : .off
     }
 
+    @objc private func toggleMeeting() {
+        if meeting.isRunning {
+            meeting.stop()
+            meetingItem.title = "Start Meeting Transcription"
+            partialItem.title = "Saved: \(meeting.currentFile?.lastPathComponent ?? "transcript")"
+        } else {
+            meeting.start()
+            meetingItem.title = "Stop Meeting Transcription"
+            partialItem.title = "📝 Meeting: transcribing…"
+        }
+        updateIcon()
+    }
+
+    @objc private func openTranscripts() {
+        NSWorkspace.shared.open(MeetingTranscriber.transcriptsFolder)
+    }
+
     @objc private func setApiKey() {
         let alert = NSAlert()
         alert.messageText = "Anthropic API Key"
@@ -173,11 +210,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        let symbol = recording ? "mic.fill" : "mic"
-        let desc = recording ? "Recording" : "Wispr Clone"
+        let active = recording || meeting.isRunning
+        let symbol = active ? "mic.fill" : "mic"
+        let desc = meeting.isRunning ? "Meeting transcribing" : (recording ? "Recording" : "Wispr Clone")
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: desc)
         button.image?.isTemplate = true
-        button.contentTintColor = recording ? .systemRed : nil
+        button.contentTintColor = active ? .systemRed : nil
     }
 
     private func ensureAccessibility() {

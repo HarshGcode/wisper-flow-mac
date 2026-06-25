@@ -101,6 +101,89 @@ def insert_text(text):
         pass
 
 
+# ---- Meeting Mode: continuously transcribe your mic to a saved file ----------
+meeting_active = False
+_meeting_file = None
+
+
+def transcript_dir():
+    d = os.path.join(os.path.expanduser("~"), "Documents", "WisprClone-Transcripts")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def append_transcript(text):
+    if not _meeting_file:
+        return
+    line = f"[{datetime.datetime.now():%H:%M}] {text}\n"
+    try:
+        with open(_meeting_file, "a", encoding="utf-8") as f:
+            f.write(line)
+    except Exception:
+        log("Transcript write error:\n" + traceback.format_exc())
+
+
+def meeting_loop(icon):
+    """While a meeting is active, keep listening and append finalized phrases."""
+    try:
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            while meeting_active:
+                try:
+                    audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                except sr.WaitTimeoutError:
+                    continue  # no speech in the last few seconds — re-check state
+                except Exception:
+                    continue
+                if not meeting_active:
+                    break
+                try:
+                    text = recognizer.recognize_google(audio, language=LANGUAGE)
+                    if text:
+                        append_transcript(text)
+                        log(f"[meeting] {text!r}")
+                except sr.UnknownValueError:
+                    pass
+                except Exception:
+                    log("Meeting transcribe error:\n" + traceback.format_exc())
+    except Exception:
+        log("Meeting mic error:\n" + traceback.format_exc())
+    finally:
+        icon.icon = make_icon(active=False)
+
+
+def start_meeting(icon):
+    global meeting_active, _meeting_file, _status
+    if meeting_active:
+        return
+    path = os.path.join(transcript_dir(), f"Meeting-{datetime.datetime.now():%Y-%m-%d-%H%M}.txt")
+    _meeting_file = path
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"Meeting transcript — {datetime.datetime.now():%Y-%m-%d %H:%M}\n")
+            f.write("=" * 50 + "\n\n")
+    except Exception:
+        log("Could not create transcript file:\n" + traceback.format_exc())
+        return
+    meeting_active = True
+    _status = "Meeting: transcribing…"
+    log(f"Meeting transcription started -> {path}")
+    icon.icon = make_icon(active=True)
+    icon.update_menu()
+    threading.Thread(target=meeting_loop, args=(icon,), daemon=True).start()
+
+
+def stop_meeting(icon):
+    global meeting_active, _status
+    if not meeting_active:
+        return
+    meeting_active = False
+    _status = "Idle"
+    log(f"Meeting transcription stopped. Saved: {_meeting_file}")
+    icon.icon = make_icon(active=False)
+    icon.update_menu()
+
+
 def record_and_transcribe(icon):
     """Record from the mic while the hotkey is held, then transcribe + type."""
     global _status
@@ -147,6 +230,8 @@ def record_and_transcribe(icon):
 def on_press(icon):
     def handler(_event):
         global is_recording
+        if meeting_active:
+            return  # don't push-to-talk while a meeting is being transcribed
         if not is_recording:
             is_recording = True
             threading.Thread(target=record_and_transcribe, args=(icon,), daemon=True).start()
@@ -166,6 +251,13 @@ def main():
         menu=pystray.Menu(
             pystray.MenuItem(lambda i: f"Status: {_status}", None, enabled=False),
             pystray.MenuItem(f"Hold {HOTKEY.title()} to dictate", None, enabled=False),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                lambda i: "■  Stop Meeting Transcription" if meeting_active else "●  Start Meeting Transcription",
+                lambda i, item: stop_meeting(i) if meeting_active else start_meeting(i),
+            ),
+            pystray.MenuItem("Open Transcripts Folder", lambda i, item: os.startfile(transcript_dir())),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", lambda i, item: (keyboard.unhook_all(), i.stop())),
         ),
     )
