@@ -1,19 +1,15 @@
 """
 ================================================================================
   WISPR CLONE  —  WINDOWS VERSION   (Python)
-  This file runs ONLY on Windows. It is the Windows equivalent of the macOS
-  Swift app in ../Sources/WisprClone/.  (Do NOT use this on a Mac.)
+  Windows equivalent of the macOS Swift app (../Sources/WisprClone/).
 ================================================================================
 
-What it does (same idea as the Mac app):
-  • Lives in the system tray (bottom-right, near the clock).
-  • Push-to-talk: HOLD the Right Ctrl key, speak, then release.
-  • Your speech is transcribed and typed into whatever text field is focused.
+Features (all visible in the window UI + the system tray):
+  • Voice typing: HOLD Right Ctrl, speak, release — typed into the focused field.
+  • Meeting transcription: continuously transcribe your mic to a saved file.
 
-Speech engine: Google Web Speech (free, needs internet) — same as the browser
-extension. (The Mac app uses Apple's on-device engine.)
-
-Setup + run:  see README.md in this folder.
+Speech engine: Google Web Speech (free, needs internet).
+Setup + run:  see README.md.
 """
 
 import os
@@ -24,9 +20,7 @@ import datetime
 import traceback
 
 
-# ---- Logging (so errors are visible even in the no-console .exe) -------------
 def _log_dir():
-    # Next to the .exe when frozen, else next to this script.
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
@@ -45,10 +39,10 @@ def log(msg):
         pass
 
 
-# Import third-party libs with clear errors if something is missing/broken.
 try:
-    import keyboard          # global hotkey
-    import pyperclip         # clipboard (for pasting text)
+    import tkinter as tk
+    import keyboard
+    import pyperclip
     import speech_recognition as sr
     import pystray
     from PIL import Image, ImageDraw
@@ -57,34 +51,50 @@ except Exception:
     raise
 
 # ---- Settings ---------------------------------------------------------------
-# Push-to-talk key. Hold it to dictate. Change this if you prefer another key
-# (e.g. "right alt", "right shift", "scroll lock").
 HOTKEY = "right ctrl"
 LANGUAGE = "en-US"
 # -----------------------------------------------------------------------------
 
 recognizer = sr.Recognizer()
 is_recording = False
+meeting_active = False
+_meeting_file = None
 _status = "Idle"
 
+tray_icon = None
+_root = None
+_show_requested = False
+_quit_requested = False
 
+
+def set_status(s):
+    global _status
+    _status = s
+
+
+def set_tray_active(active):
+    if tray_icon is not None:
+        try:
+            tray_icon.icon = make_icon(active)
+        except Exception:
+            pass
+
+
+# ---- Icon -------------------------------------------------------------------
 def make_icon(active=False):
-    """Draw a simple microphone tray icon (purple, red when recording)."""
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     bg = (224, 36, 94) if active else (107, 81, 242)
     d.rounded_rectangle((4, 4, 60, 60), radius=14, fill=bg)
-    # mic body
     d.rounded_rectangle((26, 16, 38, 40), radius=6, fill="white")
-    # stand
     d.arc((20, 24, 44, 46), start=0, end=180, fill="white", width=3)
     d.line((32, 46, 32, 52), fill="white", width=3)
     d.line((24, 52, 40, 52), fill="white", width=3)
     return img
 
 
+# ---- Text insertion ---------------------------------------------------------
 def insert_text(text):
-    """Paste `text` into the currently focused field via the clipboard."""
     if not text:
         return
     try:
@@ -96,16 +106,12 @@ def insert_text(text):
     keyboard.send("ctrl+v")
     time.sleep(0.15)
     try:
-        pyperclip.copy(previous)  # restore the user's old clipboard
+        pyperclip.copy(previous)
     except Exception:
         pass
 
 
-# ---- Meeting Mode: continuously transcribe your mic to a saved file ----------
-meeting_active = False
-_meeting_file = None
-
-
+# ---- Meeting Mode -----------------------------------------------------------
 def transcript_dir():
     d = os.path.join(os.path.expanduser("~"), "Documents", "WisprClone-Transcripts")
     os.makedirs(d, exist_ok=True)
@@ -115,16 +121,14 @@ def transcript_dir():
 def append_transcript(text):
     if not _meeting_file:
         return
-    line = f"[{datetime.datetime.now():%H:%M}] {text}\n"
     try:
         with open(_meeting_file, "a", encoding="utf-8") as f:
-            f.write(line)
+            f.write(f"[{datetime.datetime.now():%H:%M}] {text}\n")
     except Exception:
         log("Transcript write error:\n" + traceback.format_exc())
 
 
-def meeting_loop(icon):
-    """While a meeting is active, keep listening and append finalized phrases."""
+def meeting_loop():
     try:
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
@@ -132,7 +136,7 @@ def meeting_loop(icon):
                 try:
                     audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
                 except sr.WaitTimeoutError:
-                    continue  # no speech in the last few seconds — re-check state
+                    continue
                 except Exception:
                     continue
                 if not meeting_active:
@@ -149,11 +153,11 @@ def meeting_loop(icon):
     except Exception:
         log("Meeting mic error:\n" + traceback.format_exc())
     finally:
-        icon.icon = make_icon(active=False)
+        set_tray_active(False)
 
 
-def start_meeting(icon):
-    global meeting_active, _meeting_file, _status
+def start_meeting():
+    global meeting_active, _meeting_file
     if meeting_active:
         return
     path = os.path.join(transcript_dir(), f"Meeting-{datetime.datetime.now():%Y-%m-%d-%H%M}.txt")
@@ -166,76 +170,73 @@ def start_meeting(icon):
         log("Could not create transcript file:\n" + traceback.format_exc())
         return
     meeting_active = True
-    _status = "Meeting: transcribing…"
+    set_status("Meeting: transcribing…")
+    set_tray_active(True)
     log(f"Meeting transcription started -> {path}")
-    icon.icon = make_icon(active=True)
-    icon.update_menu()
-    threading.Thread(target=meeting_loop, args=(icon,), daemon=True).start()
+    threading.Thread(target=meeting_loop, daemon=True).start()
 
 
-def stop_meeting(icon):
-    global meeting_active, _status
+def stop_meeting():
+    global meeting_active
     if not meeting_active:
         return
     meeting_active = False
-    _status = "Idle"
+    set_status("Idle")
+    set_tray_active(False)
     log(f"Meeting transcription stopped. Saved: {_meeting_file}")
-    icon.icon = make_icon(active=False)
-    icon.update_menu()
 
 
-def record_and_transcribe(icon):
-    """Record from the mic while the hotkey is held, then transcribe + type."""
+def open_transcripts():
+    try:
+        os.startfile(transcript_dir())
+    except Exception:
+        log("Open folder error:\n" + traceback.format_exc())
+
+
+# ---- Push-to-talk dictation -------------------------------------------------
+def record_and_transcribe():
     global _status
     frames = []
     try:
         log("Opening microphone…")
         with sr.Microphone() as source:
-            _status = "Listening…"
-            icon.icon = make_icon(active=True)
+            set_status("Listening…")
+            set_tray_active(True)
             while is_recording:
                 try:
-                    # NOTE: SpeechRecognition's MicrophoneStream.read takes only the
-                    # chunk size (it passes exception_on_overflow=False internally).
                     frames.append(source.stream.read(source.CHUNK))
                 except Exception:
                     log("Audio read error:\n" + traceback.format_exc())
                     break
             audio = sr.AudioData(b"".join(frames), source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         log(f"Captured {len(frames)} audio chunks")
-    except Exception as e:
+    except Exception:
         log("Mic error:\n" + traceback.format_exc())
-        _status = f"Mic error: {e}"
-        icon.icon = make_icon(active=False)
+        set_status("Mic error")
+        set_tray_active(False)
         return
 
-    icon.icon = make_icon(active=False)
-    _status = "Transcribing…"
+    set_tray_active(False)
+    set_status("Transcribing…")
     try:
         text = recognizer.recognize_google(audio, language=LANGUAGE)
         log(f"Recognized: {text!r}")
         insert_text(text + " ")
-        _status = "Idle"
+        set_status("Idle")
     except sr.UnknownValueError:
-        log("No speech recognized")
-        _status = "Didn't catch that"
-    except sr.RequestError as e:
-        log("Network/API error:\n" + traceback.format_exc())
-        _status = f"Network/API error: {e}"
-    except Exception as e:
+        set_status("Didn't catch that")
+    except Exception:
         log("Transcribe error:\n" + traceback.format_exc())
-        _status = f"Error: {e}"
+        set_status("Error")
 
 
-def on_press(icon):
-    def handler(_event):
-        global is_recording
-        if meeting_active:
-            return  # don't push-to-talk while a meeting is being transcribed
-        if not is_recording:
-            is_recording = True
-            threading.Thread(target=record_and_transcribe, args=(icon,), daemon=True).start()
-    return handler
+def on_press(_event):
+    global is_recording
+    if meeting_active:
+        return
+    if not is_recording:
+        is_recording = True
+        threading.Thread(target=record_and_transcribe, daemon=True).start()
 
 
 def on_release(_event):
@@ -243,32 +244,143 @@ def on_release(_event):
     is_recording = False
 
 
-def main():
-    icon = pystray.Icon(
+# ---- System tray ------------------------------------------------------------
+def build_tray():
+    return pystray.Icon(
         "wispr_clone",
         make_icon(),
-        "Wispr Clone (Windows) — hold Right Ctrl to dictate",
+        "Wispr Clone (Windows)",
         menu=pystray.Menu(
-            pystray.MenuItem(lambda i: f"Status: {_status}", None, enabled=False),
-            pystray.MenuItem(f"Hold {HOTKEY.title()} to dictate", None, enabled=False),
+            pystray.MenuItem("Show Window", lambda i, item: _request_show()),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                lambda i: "■  Stop Meeting Transcription" if meeting_active else "●  Start Meeting Transcription",
-                lambda i, item: stop_meeting(i) if meeting_active else start_meeting(i),
+                lambda i: "Stop Meeting Transcription" if meeting_active else "Start Meeting Transcription",
+                lambda i, item: stop_meeting() if meeting_active else start_meeting(),
             ),
-            pystray.MenuItem("Open Transcripts Folder", lambda i, item: os.startfile(transcript_dir())),
+            pystray.MenuItem("Open Transcripts Folder", lambda i, item: open_transcripts()),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Quit", lambda i, item: (keyboard.unhook_all(), i.stop())),
+            pystray.MenuItem("Quit", lambda i, item: _request_quit()),
         ),
     )
 
-    # Register the push-to-talk hotkey.
+
+def _request_show():
+    global _show_requested
+    _show_requested = True
+
+
+def _request_quit():
+    global _quit_requested
+    _quit_requested = True
+
+
+# ---- Window UI (tkinter) ----------------------------------------------------
+def build_window():
+    root = tk.Tk()
+    root.title("Wispr Clone")
+    root.geometry("440x470")
+    root.configure(bg="#0c0f1a")
+    root.resizable(False, False)
+
+    PURPLE, BLUE, FG, MUTED, CARD = "#6b51f2", "#458cfb", "#eef1fa", "#9aa3bf", "#141a2e"
+
+    tk.Label(root, text="🎙  Wispr Clone", bg="#0c0f1a", fg=FG,
+             font=("Segoe UI", 20, "bold")).pack(anchor="w", padx=24, pady=(22, 2))
+
+    status_var = tk.StringVar(value="● Idle")
+    tk.Label(root, textvariable=status_var, bg="#0c0f1a", fg=MUTED,
+             font=("Segoe UI", 10)).pack(anchor="w", padx=24)
+
+    def section(title):
+        tk.Frame(root, bg="#222a44", height=1).pack(fill="x", padx=24, pady=(16, 10))
+        tk.Label(root, text=title, bg="#0c0f1a", fg=FG,
+                 font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=24)
+
+    def hint(text):
+        tk.Label(root, text=text, bg="#0c0f1a", fg=MUTED, font=("Segoe UI", 9),
+                 wraplength=390, justify="left").pack(anchor="w", padx=24, pady=(4, 0))
+
+    section("🎙  Voice Typing")
+    hint("Hold the Right Ctrl key in any app, speak, then release — your words are typed where the cursor is.")
+
+    section("📝  Meeting Transcription")
+    hint("Transcribe your voice during any meeting (Zoom, Meet, Teams) and save it to a timestamped file.")
+
+    meet_text = tk.StringVar(value="● Start Meeting Transcription")
+
+    def on_meet():
+        if meeting_active:
+            stop_meeting()
+        else:
+            start_meeting()
+
+    meet_btn = tk.Button(root, textvariable=meet_text, command=on_meet,
+                         bg=PURPLE, fg="white", activebackground=BLUE, activeforeground="white",
+                         relief="flat", font=("Segoe UI", 11, "bold"), cursor="hand2",
+                         padx=14, pady=8, bd=0)
+    meet_btn.pack(fill="x", padx=24, pady=(10, 6))
+
+    tk.Button(root, text="Open Transcripts Folder", command=open_transcripts,
+              bg=CARD, fg=FG, activebackground="#1f2740", activeforeground=FG,
+              relief="flat", font=("Segoe UI", 10), cursor="hand2", padx=10, pady=6, bd=0
+              ).pack(fill="x", padx=24)
+
+    tk.Label(root, text="Closing this window keeps Wispr Clone running in the tray.",
+             bg="#0c0f1a", fg=MUTED, font=("Segoe UI", 8)).pack(anchor="w", padx=24, pady=(18, 0))
+
+    # Keep UI in sync + handle tray-triggered show/quit (must run on this thread).
+    def tick():
+        status_var.set(("🔴 " if (meeting_active or is_recording) else "● ") + _status)
+        meet_text.set("■ Stop Meeting Transcription" if meeting_active else "● Start Meeting Transcription")
+        meet_btn.configure(bg=("#e0245e" if meeting_active else PURPLE))
+        global _show_requested
+        if _show_requested:
+            _show_requested = False
+            root.deiconify(); root.lift()
+        if _quit_requested:
+            _do_quit(root)
+            return
+        root.after(300, tick)
+
+    root.protocol("WM_DELETE_WINDOW", root.withdraw)  # hide to tray instead of quitting
+    root.after(300, tick)
+    return root
+
+
+def _do_quit(root):
+    try:
+        keyboard.unhook_all()
+    except Exception:
+        pass
+    try:
+        if tray_icon is not None:
+            tray_icon.stop()
+    except Exception:
+        pass
+    try:
+        root.destroy()
+    except Exception:
+        pass
+    os._exit(0)
+
+
+# ---- Main -------------------------------------------------------------------
+def main():
+    global tray_icon, _root
+
+    tray_icon = build_tray()
+    try:
+        tray_icon.run_detached()  # tray in the background; window owns the main thread
+    except Exception:
+        threading.Thread(target=tray_icon.run, daemon=True).start()
+
     log("Registering hotkey…")
-    keyboard.on_press_key(HOTKEY, on_press(icon), suppress=False)
+    keyboard.on_press_key(HOTKEY, on_press, suppress=False)
     keyboard.on_release_key(HOTKEY, on_release, suppress=False)
 
-    log("Tray icon starting — app is ready. Hold the hotkey to dictate.")
-    icon.run()
+    log("Window starting — app is ready.")
+    _root = build_window()
+    _root.mainloop()
 
 
 if __name__ == "__main__":
@@ -278,7 +390,6 @@ if __name__ == "__main__":
         main()
     except Exception:
         log("FATAL on startup:\n" + traceback.format_exc())
-        # Keep a console window open so the user can read the error.
         try:
             input("\nAn error occurred (see above and wispr_clone_log.txt). Press Enter to exit…")
         except Exception:
