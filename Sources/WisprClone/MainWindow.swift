@@ -73,6 +73,23 @@ extension AppDelegate {
 
         // Settings
         stack.addArrangedSubview(makeSectionTitle("⚙️  Settings"))
+
+        let langRow = NSStackView()
+        langRow.orientation = .horizontal
+        langRow.spacing = 10
+        let langLabel = NSTextField(labelWithString: "🌐 Speech language:")
+        langLabel.font = .systemFont(ofSize: 12)
+        let langPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+        for (name, _) in Settings.languageOptions { langPopup.addItem(withTitle: name) }
+        if let idx = Settings.languageOptions.firstIndex(where: { $0.1 == Settings.language }) {
+            langPopup.selectItem(at: idx)
+        }
+        langPopup.target = self
+        langPopup.action = #selector(windowChangeLanguage(_:))
+        langRow.addArrangedSubview(langLabel)
+        langRow.addArrangedSubview(langPopup)
+        stack.addArrangedSubview(langRow)
+
         let cleanup = NSButton(checkboxWithTitle: "AI Cleanup (Claude) — fix grammar & filler words",
                                target: self, action: #selector(windowToggleCleanup(_:)))
         cleanup.state = Settings.cleanupEnabled ? .on : .off
@@ -139,6 +156,12 @@ extension AppDelegate {
 
     @objc func windowToggleAutoPaste(_ sender: NSButton) {
         Settings.autoPaste = (sender.state == .on)
+    }
+
+    @objc func windowChangeLanguage(_ sender: NSPopUpButton) {
+        let idx = sender.indexOfSelectedItem
+        guard idx >= 0 && idx < Settings.languageOptions.count else { return }
+        Settings.language = Settings.languageOptions[idx].1
     }
 
     // MARK: - Small builders

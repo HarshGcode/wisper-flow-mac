@@ -4,7 +4,7 @@ import Speech
 /// Captures microphone audio and transcribes it on-device with SFSpeechRecognizer.
 final class SpeechService {
     private let engine = AVAudioEngine()
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.language))
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var latest = ""
@@ -31,8 +31,10 @@ final class SpeechService {
 
     func start() {
         guard !isRunning else { return }
+        // Recreate for the currently selected language (e.g. Hindi hi-IN).
+        recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.language))
         guard let recognizer, recognizer.isAvailable else {
-            onError?("Speech recognizer unavailable")
+            onError?("Speech recognizer unavailable for \(Settings.language)")
             return
         }
 

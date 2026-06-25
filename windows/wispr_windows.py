@@ -52,7 +52,42 @@ except Exception:
 
 # ---- Settings ---------------------------------------------------------------
 HOTKEY = "right ctrl"
-LANGUAGE = "en-US"
+
+LANG_OPTIONS = [
+    ("English (US)", "en-US"),
+    ("Hindi — हिन्दी", "hi-IN"),
+    ("English (India)", "en-IN"),
+    ("Spanish", "es-ES"),
+    ("French", "fr-FR"),
+    ("German", "de-DE"),
+    ("Arabic", "ar-SA"),
+    ("Mandarin", "zh-CN"),
+]
+CONFIG_PATH = os.path.join(_log_dir(), "wispr_config.txt")
+
+
+def load_language():
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            code = f.read().strip()
+            if code:
+                return code
+    except Exception:
+        pass
+    return "en-US"
+
+
+def save_language(code):
+    global current_language
+    current_language = code
+    try:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            f.write(code)
+    except Exception:
+        pass
+
+
+current_language = load_language()
 # -----------------------------------------------------------------------------
 
 recognizer = sr.Recognizer()
@@ -142,7 +177,7 @@ def meeting_loop():
                 if not meeting_active:
                     break
                 try:
-                    text = recognizer.recognize_google(audio, language=LANGUAGE)
+                    text = recognizer.recognize_google(audio, language=current_language)
                     if text:
                         append_transcript(text)
                         log(f"[meeting] {text!r}")
@@ -219,7 +254,7 @@ def record_and_transcribe():
     set_tray_active(False)
     set_status("Transcribing…")
     try:
-        text = recognizer.recognize_google(audio, language=LANGUAGE)
+        text = recognizer.recognize_google(audio, language=current_language)
         log(f"Recognized: {text!r}")
         insert_text(text + " ")
         set_status("Idle")
@@ -278,7 +313,7 @@ def _request_quit():
 def build_window():
     root = tk.Tk()
     root.title("Wispr Clone")
-    root.geometry("440x470")
+    root.geometry("440x580")
     root.configure(bg="#0c0f1a")
     root.resizable(False, False)
 
@@ -324,6 +359,24 @@ def build_window():
               bg=CARD, fg=FG, activebackground="#1f2740", activeforeground=FG,
               relief="flat", font=("Segoe UI", 10), cursor="hand2", padx=10, pady=6, bd=0
               ).pack(fill="x", padx=24)
+
+    section("⚙  Settings")
+    hint("Speech language — pick the language you'll speak in.")
+
+    def on_lang(selected_name):
+        for n, c in LANG_OPTIONS:
+            if n == selected_name:
+                save_language(c)
+                log(f"Language set to {c}")
+                break
+
+    cur_name = next((n for n, c in LANG_OPTIONS if c == current_language), "English (US)")
+    lang_var = tk.StringVar(value=cur_name)
+    lang_menu = tk.OptionMenu(root, lang_var, *[n for n, _ in LANG_OPTIONS], command=on_lang)
+    lang_menu.configure(bg=CARD, fg=FG, activebackground="#1f2740", activeforeground=FG,
+                        relief="flat", highlightthickness=0, font=("Segoe UI", 10), cursor="hand2")
+    lang_menu["menu"].configure(bg=CARD, fg=FG)
+    lang_menu.pack(fill="x", padx=24, pady=(8, 0))
 
     tk.Label(root, text="Closing this window keeps Wispr Clone running in the tray.",
              bg="#0c0f1a", fg=MUTED, font=("Segoe UI", 8)).pack(anchor="w", padx=24, pady=(18, 0))

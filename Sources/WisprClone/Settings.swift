@@ -8,7 +8,26 @@ enum Settings {
         static let cleanupEnabled = "cleanupEnabled"
         static let apiKey = "anthropicApiKey"
         static let autoPaste = "autoPaste"
+        static let language = "speechLanguage"
     }
+
+    /// Speech-recognition language (BCP-47, e.g. "en-US", "hi-IN").
+    static var language: String {
+        get { d.string(forKey: Keys.language) ?? "en-US" }
+        set { d.set(newValue, forKey: Keys.language) }
+    }
+
+    /// Languages offered in the UI: (display name, locale id).
+    static let languageOptions: [(String, String)] = [
+        ("English (US)", "en-US"),
+        ("Hindi — हिन्दी", "hi-IN"),
+        ("English (India)", "en-IN"),
+        ("Spanish", "es-ES"),
+        ("French", "fr-FR"),
+        ("German", "de-DE"),
+        ("Arabic", "ar-SA"),
+        ("Mandarin", "zh-CN"),
+    ]
 
     static var cleanupEnabled: Bool {
         get { d.bool(forKey: Keys.cleanupEnabled) }
