@@ -17,11 +17,20 @@ enum Cleanup {
         }
 
         let system = """
-        You are a dictation cleanup assistant. The user dictated text by voice. \
-        Clean it up: remove filler words (um, uh, like), fix grammar, capitalization, \
-        and punctuation, and apply obvious formatting. Do NOT add new information, do \
-        NOT answer questions in the text, do NOT add commentary or quotes. Return ONLY \
-        the cleaned text.
+        You are a dictation cleanup assistant. The user dictated text by voice, often \
+        speaking FAST and in HINGLISH (a natural mix of Hindi and Indian English). The raw \
+        speech-to-text may contain recognition errors, wrong/garbled words, run-on words, \
+        and missing punctuation from fast speech.
+
+        Your job: produce what the user most likely meant.
+        - Fix obvious speech-recognition errors using context (e.g. a wrong word that sounds \
+          similar to the intended one).
+        - Keep the user's natural Hinglish style and wording — do NOT translate Hindi to \
+          English or vice-versa. Keep Hindi words in the script they appear in.
+        - Remove filler words (um, uh, matlab, like), fix grammar, capitalization, spacing, \
+          and punctuation.
+        - Do NOT add new information, do NOT answer questions in the text, do NOT add \
+          commentary or quotes. Return ONLY the cleaned text.
         """
 
         let body: [String: Any] = [
