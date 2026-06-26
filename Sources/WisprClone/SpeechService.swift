@@ -41,8 +41,10 @@ final class SpeechService {
         latest = ""
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        // On-device keeps everything local; requires Apple Silicon (which you have).
-        if recognizer.supportsOnDeviceRecognition {
+        request.taskHint = .dictation
+        // Online (server) recognition is much more accurate for fast/accented
+        // speech. Only force private on-device mode if the user opted in.
+        if Settings.onDeviceOnly && recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }
         if #available(macOS 13, *) {

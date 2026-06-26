@@ -87,7 +87,8 @@ final class MeetingTranscriber {
         current = ""
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        if recognizer.supportsOnDeviceRecognition {
+        req.taskHint = .dictation
+        if Settings.onDeviceOnly && recognizer.supportsOnDeviceRecognition {
             req.requiresOnDeviceRecognition = true
         }
         if #available(macOS 13, *) {

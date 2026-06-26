@@ -9,6 +9,14 @@ enum Settings {
         static let apiKey = "anthropicApiKey"
         static let autoPaste = "autoPaste"
         static let language = "speechLanguage"
+        static let onDeviceOnly = "onDeviceOnly"
+    }
+
+    /// When true, force private on-device recognition (less accurate, esp. for
+    /// fast speech). Default false → use Apple's more accurate online engine.
+    static var onDeviceOnly: Bool {
+        get { d.bool(forKey: Keys.onDeviceOnly) }  // default false
+        set { d.set(newValue, forKey: Keys.onDeviceOnly) }
     }
 
     /// Speech-recognition language (BCP-47, e.g. "en-US", "hi-IN").

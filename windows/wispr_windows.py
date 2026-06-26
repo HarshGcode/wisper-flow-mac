@@ -167,9 +167,11 @@ def meeting_loop():
     try:
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            # Allow longer phrases so fast/continuous talkers aren't cut off.
+            recognizer.pause_threshold = 1.0
             while meeting_active:
                 try:
-                    audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                    audio = recognizer.listen(source, timeout=5, phrase_time_limit=20)
                 except sr.WaitTimeoutError:
                     continue
                 except Exception:

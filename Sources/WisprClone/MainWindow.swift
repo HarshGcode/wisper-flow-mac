@@ -102,6 +102,11 @@ extension AppDelegate {
         winAutoPasteCheck = autoPaste
         stack.addArrangedSubview(autoPaste)
 
+        let onDevice = NSButton(checkboxWithTitle: "Private on-device only (less accurate for fast speech)",
+                                target: self, action: #selector(windowToggleOnDevice(_:)))
+        onDevice.state = Settings.onDeviceOnly ? .on : .off
+        stack.addArrangedSubview(onDevice)
+
         let apiBtn = NSButton(title: "Set Anthropic API Key…", target: self, action: #selector(setApiKey))
         apiBtn.bezelStyle = .rounded
         stack.addArrangedSubview(apiBtn)
@@ -162,6 +167,10 @@ extension AppDelegate {
         let idx = sender.indexOfSelectedItem
         guard idx >= 0 && idx < Settings.languageOptions.count else { return }
         Settings.language = Settings.languageOptions[idx].1
+    }
+
+    @objc func windowToggleOnDevice(_ sender: NSButton) {
+        Settings.onDeviceOnly = (sender.state == .on)
     }
 
     // MARK: - Small builders
