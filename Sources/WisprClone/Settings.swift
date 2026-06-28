@@ -10,6 +10,25 @@ enum Settings {
         static let autoPaste = "autoPaste"
         static let language = "speechLanguage"
         static let onDeviceOnly = "onDeviceOnly"
+        static let useWhisper = "useWhisper"
+        static let whisperKey = "whisperApiKey"
+    }
+
+    /// Hinglish mode: use Whisper (via Groq) which transcribes mixed Hindi+English
+    /// in one pass — far better than the OS engine for code-switched speech.
+    static var useWhisper: Bool {
+        get { d.bool(forKey: Keys.useWhisper) }
+        set { d.set(newValue, forKey: Keys.useWhisper) }
+    }
+
+    /// Groq API key for Whisper. Falls back to the GROQ_API_KEY env var.
+    static var whisperKey: String? {
+        get {
+            if let s = d.string(forKey: Keys.whisperKey), !s.isEmpty { return s }
+            let env = ProcessInfo.processInfo.environment["GROQ_API_KEY"]
+            return (env?.isEmpty == false) ? env : nil
+        }
+        set { d.set(newValue, forKey: Keys.whisperKey) }
     }
 
     /// When true, force private on-device recognition (less accurate, esp. for

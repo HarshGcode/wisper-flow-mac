@@ -7,7 +7,7 @@ extension AppDelegate {
 
     func setupMainWindow() {
         let win = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 600),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 700),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered, defer: false
         )
@@ -90,6 +90,15 @@ extension AppDelegate {
         langRow.addArrangedSubview(langPopup)
         stack.addArrangedSubview(langRow)
 
+        let whisperCheck = NSButton(checkboxWithTitle: "✨ Hinglish mode (Whisper) — best for Hindi + English together",
+                                    target: self, action: #selector(windowToggleWhisper(_:)))
+        whisperCheck.state = Settings.useWhisper ? .on : .off
+        stack.addArrangedSubview(whisperCheck)
+
+        let whisperKeyBtn = NSButton(title: "Set Whisper (Groq) API Key…", target: self, action: #selector(setWhisperKey))
+        whisperKeyBtn.bezelStyle = .rounded
+        stack.addArrangedSubview(whisperKeyBtn)
+
         let cleanup = NSButton(checkboxWithTitle: "AI Cleanup (Claude) — fix grammar & filler words",
                                target: self, action: #selector(windowToggleCleanup(_:)))
         cleanup.state = Settings.cleanupEnabled ? .on : .off
@@ -171,6 +180,32 @@ extension AppDelegate {
 
     @objc func windowToggleOnDevice(_ sender: NSButton) {
         Settings.onDeviceOnly = (sender.state == .on)
+    }
+
+    @objc func windowToggleWhisper(_ sender: NSButton) {
+        if sender.state == .on && Settings.whisperKey == nil {
+            sender.state = .off
+            showInfo(title: "Free Groq key needed",
+                     text: "Hinglish mode uses Whisper via Groq (free). Click \"Set Whisper (Groq) API Key…\" and paste a key from console.groq.com/keys")
+            return
+        }
+        Settings.useWhisper = (sender.state == .on)
+    }
+
+    @objc func setWhisperKey() {
+        let alert = NSAlert()
+        alert.messageText = "Whisper (Groq) API Key"
+        alert.informativeText = "Free key for Hinglish transcription. Get one at console.groq.com/keys — it starts with \"gsk_\"."
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        field.stringValue = Settings.whisperKey ?? ""
+        alert.accessoryView = field
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            let v = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            Settings.whisperKey = v.isEmpty ? nil : v
+        }
     }
 
     // MARK: - Small builders

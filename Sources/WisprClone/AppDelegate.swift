@@ -4,6 +4,7 @@ import ApplicationServices
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let speech = SpeechService()
+    private let whisper = WhisperService()
     private let hotkeys = HotkeyManager()
     let meeting = MeetingTranscriber()
     var recordingPublic: Bool { recording }
@@ -139,6 +140,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         meeting.onError = { [weak self] msg in
             self?.partialItem.title = "Meeting error: \(msg)"
         }
+
+        whisper.onPartial = { [weak self] text in
+            self?.partialItem.title = text
+        }
+        whisper.onError = { [weak self] msg in
+            self?.partialItem.title = "Error: \(msg)"
+        }
+        whisper.onFinal = { [weak self] text in
+            self?.handleFinal(text)
+        }
     }
 
     // MARK: - Recording flow
@@ -149,14 +160,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording = true
         partialItem.title = "Listening…"
         updateIcon()
-        speech.start()
+        if Settings.useWhisper { whisper.start() } else { speech.start() }
     }
 
     private func stopRecording() {
         guard recording else { return }
         recording = false
         updateIcon()
-        speech.stop()
+        if Settings.useWhisper { whisper.stop() } else { speech.stop() }
     }
 
     private func handleFinal(_ text: String) {

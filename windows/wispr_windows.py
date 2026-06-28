@@ -41,6 +41,7 @@ def log(msg):
 
 try:
     import tkinter as tk
+    from tkinter import simpledialog, messagebox
     import keyboard
     import pyperclip
     import speech_recognition as sr
@@ -63,31 +64,62 @@ LANG_OPTIONS = [
     ("Arabic", "ar-SA"),
     ("Mandarin", "zh-CN"),
 ]
-CONFIG_PATH = os.path.join(_log_dir(), "wispr_config.txt")
+import json
+import requests
+
+CONFIG_PATH = os.path.join(_log_dir(), "wispr_config.json")
+_config = {}
 
 
-def load_language():
+def load_config():
+    global _config
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            code = f.read().strip()
-            if code:
-                return code
+            _config = json.load(f)
+    except Exception:
+        _config = {}
+
+
+def save_config():
+    try:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(_config, f)
     except Exception:
         pass
-    return "en-US"
+
+
+load_config()
+current_language = _config.get("language", "en-US")
+use_whisper = bool(_config.get("use_whisper", False))
+whisper_key = _config.get("whisper_key", "") or os.environ.get("GROQ_API_KEY", "")
 
 
 def save_language(code):
     global current_language
     current_language = code
+    _config["language"] = code
+    save_config()
+
+
+def whisper_transcribe(wav_bytes):
+    """Hinglish: send recorded audio to Whisper (Groq) — handles Hindi+English."""
+    if not whisper_key:
+        log("Hinglish mode on but no Groq key set")
+        return ""
     try:
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            f.write(code)
+        resp = requests.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization": f"Bearer {whisper_key}"},
+            files={"file": ("audio.wav", wav_bytes, "audio/wav")},
+            data={"model": "whisper-large-v3", "response_format": "text", "temperature": "0"},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            return resp.text.strip()
+        log(f"Whisper error {resp.status_code}: {resp.text[:200]}")
     except Exception:
-        pass
-
-
-current_language = load_language()
+        log("Whisper request error:\n" + traceback.format_exc())
+    return ""
 # -----------------------------------------------------------------------------
 
 recognizer = sr.Recognizer()
@@ -255,6 +287,17 @@ def record_and_transcribe():
 
     set_tray_active(False)
     set_status("Transcribing…")
+
+    if use_whisper and whisper_key:
+        text = whisper_transcribe(audio.get_wav_data())
+        log(f"Whisper: {text!r}")
+        if text:
+            insert_text(text + " ")
+            set_status("Idle")
+        else:
+            set_status("Didn't catch that")
+        return
+
     try:
         text = recognizer.recognize_google(audio, language=current_language)
         log(f"Recognized: {text!r}")
@@ -315,7 +358,7 @@ def _request_quit():
 def build_window():
     root = tk.Tk()
     root.title("Wispr Clone")
-    root.geometry("440x580")
+    root.geometry("440x680")
     root.configure(bg="#0c0f1a")
     root.resizable(False, False)
 
@@ -379,6 +422,43 @@ def build_window():
                         relief="flat", highlightthickness=0, font=("Segoe UI", 10), cursor="hand2")
     lang_menu["menu"].configure(bg=CARD, fg=FG)
     lang_menu.pack(fill="x", padx=24, pady=(8, 0))
+
+    # Hinglish mode (Whisper)
+    whisper_var = tk.BooleanVar(value=use_whisper)
+
+    def on_whisper_toggle():
+        global use_whisper
+        if whisper_var.get() and not whisper_key:
+            whisper_var.set(False)
+            messagebox.showinfo("Free Groq key needed",
+                                "Hinglish mode uses Whisper via Groq (free).\n"
+                                "Click 'Set Whisper (Groq) Key' and paste a key from console.groq.com/keys")
+            return
+        use_whisper = whisper_var.get()
+        _config["use_whisper"] = use_whisper
+        save_config()
+        log(f"Hinglish (Whisper) mode: {use_whisper}")
+
+    tk.Checkbutton(root, text="✨ Hinglish mode (Whisper) — Hindi + English together",
+                   variable=whisper_var, command=on_whisper_toggle,
+                   bg="#0c0f1a", fg=FG, selectcolor=CARD, activebackground="#0c0f1a",
+                   activeforeground=FG, font=("Segoe UI", 10), anchor="w"
+                   ).pack(fill="x", padx=22, pady=(10, 0))
+
+    def set_key():
+        global whisper_key
+        k = simpledialog.askstring("Whisper (Groq) API Key",
+                                   "Paste your free Groq key (console.groq.com/keys):", show="*")
+        if k:
+            whisper_key = k.strip()
+            _config["whisper_key"] = whisper_key
+            save_config()
+            messagebox.showinfo("Saved", "Groq key saved. Tick 'Hinglish mode' to use it.")
+
+    tk.Button(root, text="Set Whisper (Groq) Key", command=set_key,
+              bg=CARD, fg=FG, activebackground="#1f2740", activeforeground=FG,
+              relief="flat", font=("Segoe UI", 10), cursor="hand2", padx=10, pady=6, bd=0
+              ).pack(fill="x", padx=24, pady=(6, 0))
 
     tk.Label(root, text="Closing this window keeps Wispr Clone running in the tray.",
              bg="#0c0f1a", fg=MUTED, font=("Segoe UI", 8)).pack(anchor="w", padx=24, pady=(18, 0))
