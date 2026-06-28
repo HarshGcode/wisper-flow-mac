@@ -202,6 +202,7 @@ extension AppDelegate {
         field.stringValue = Settings.whisperKey ?? ""
         alert.accessoryView = field
         NSApp.activate(ignoringOtherApps: true)
+        alert.window.initialFirstResponder = field  // so Cmd+V pastes right away
         if alert.runModal() == .alertFirstButtonReturn {
             let v = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             Settings.whisperKey = v.isEmpty ? nil : v
