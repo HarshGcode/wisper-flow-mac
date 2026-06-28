@@ -20,7 +20,7 @@ final class WhisperService {
     }
 
     func start() {
-        guard Settings.whisperKey != nil else {
+        guard Settings.groqKey != nil else {
             onError?("Set your Whisper (Groq) API key first")
             return
         }
@@ -46,7 +46,7 @@ final class WhisperService {
     func stop() {
         recorder?.stop()
         recorder = nil
-        guard let url = fileURL, let key = Settings.whisperKey else {
+        guard let url = fileURL, let key = Settings.groqKey else {
             onFinal?("")
             return
         }

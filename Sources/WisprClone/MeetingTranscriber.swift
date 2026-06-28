@@ -8,7 +8,7 @@ import AppKit
 /// (Zoom, Google Meet, Teams) — it just listens to your mic.
 final class MeetingTranscriber {
     private let engine = AVAudioEngine()
-    private var recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.language))
+    private var recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.isHinglish ? "hi-IN" : Settings.language))
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var current = ""
@@ -33,7 +33,7 @@ final class MeetingTranscriber {
 
     func start() {
         guard !isRunning else { return }
-        recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.language))
+        recognizer = SFSpeechRecognizer(locale: Locale(identifier: Settings.isHinglish ? "hi-IN" : Settings.language))
         guard let recognizer, recognizer.isAvailable else {
             onError?("Speech recognizer unavailable for \(Settings.language)")
             return

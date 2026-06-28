@@ -55,6 +55,7 @@ except Exception:
 HOTKEY = "right ctrl"
 
 LANG_OPTIONS = [
+    ("Hinglish (Roman) — Hindi + English", "hinglish"),
     ("English (US)", "en-US"),
     ("Hindi — हिन्दी", "hi-IN"),
     ("English (India)", "en-IN"),
@@ -90,8 +91,11 @@ def save_config():
 
 load_config()
 current_language = _config.get("language", "en-US")
-use_whisper = bool(_config.get("use_whisper", False))
-whisper_key = _config.get("whisper_key", "") or os.environ.get("GROQ_API_KEY", "")
+groq_key = _config.get("groq_key", "") or _config.get("whisper_key", "") or os.environ.get("GROQ_API_KEY", "")
+
+
+def is_hinglish():
+    return current_language == "hinglish"
 
 
 def save_language(code):
@@ -101,15 +105,49 @@ def save_language(code):
     save_config()
 
 
+def groq_chat(text, system):
+    """Post-process text with a Groq-hosted LLM (e.g. romanize Hinglish)."""
+    if not groq_key or not text:
+        return text
+    try:
+        resp = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": text},
+                ],
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            return resp.json()["choices"][0]["message"]["content"].strip()
+        log(f"Groq chat error {resp.status_code}: {resp.text[:200]}")
+    except Exception:
+        log("Groq chat error:\n" + traceback.format_exc())
+    return text
+
+
+ROMANIZE_PROMPT = (
+    "You convert Hindi+English (Hinglish) dictation into clean ROMAN-script Hinglish, "
+    "the way people type on a phone. Write Hindi words in Roman/Latin letters, NOT "
+    "Devanagari (e.g. 'क्या कर रहे हो' -> 'kya kar rahe ho'). Keep English words normal. "
+    "Remove fillers, fix obvious errors, light punctuation. Return ONLY the text."
+)
+
+
 def whisper_transcribe(wav_bytes):
     """Hinglish: send recorded audio to Whisper (Groq) — handles Hindi+English."""
-    if not whisper_key:
+    if not groq_key:
         log("Hinglish mode on but no Groq key set")
         return ""
     try:
         resp = requests.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {whisper_key}"},
+            headers={"Authorization": f"Bearer {groq_key}"},
             files={"file": ("audio.wav", wav_bytes, "audio/wav")},
             data={"model": "whisper-large-v3", "response_format": "text", "temperature": "0"},
             timeout=30,
@@ -211,7 +249,12 @@ def meeting_loop():
                 if not meeting_active:
                     break
                 try:
-                    text = recognizer.recognize_google(audio, language=current_language)
+                    if is_hinglish() and groq_key:
+                        text = whisper_transcribe(audio.get_wav_data())
+                        if text:
+                            text = groq_chat(text, ROMANIZE_PROMPT)
+                    else:
+                        text = recognizer.recognize_google(audio, language=current_language)
                     if text:
                         append_transcript(text)
                         log(f"[meeting] {text!r}")
@@ -288,10 +331,12 @@ def record_and_transcribe():
     set_tray_active(False)
     set_status("Transcribing…")
 
-    if use_whisper and whisper_key:
+    if is_hinglish() and groq_key:
         text = whisper_transcribe(audio.get_wav_data())
         log(f"Whisper: {text!r}")
         if text:
+            text = groq_chat(text, ROMANIZE_PROMPT)  # -> Roman Hinglish
+            log(f"Romanized: {text!r}")
             insert_text(text + " ")
             set_status("Idle")
         else:
@@ -423,39 +468,22 @@ def build_window():
     lang_menu["menu"].configure(bg=CARD, fg=FG)
     lang_menu.pack(fill="x", padx=24, pady=(8, 0))
 
-    # Hinglish mode (Whisper)
-    whisper_var = tk.BooleanVar(value=use_whisper)
-
-    def on_whisper_toggle():
-        global use_whisper
-        if whisper_var.get() and not whisper_key:
-            whisper_var.set(False)
-            messagebox.showinfo("Free Groq key needed",
-                                "Hinglish mode uses Whisper via Groq (free).\n"
-                                "Click 'Set Whisper (Groq) Key' and paste a key from console.groq.com/keys")
-            return
-        use_whisper = whisper_var.get()
-        _config["use_whisper"] = use_whisper
-        save_config()
-        log(f"Hinglish (Whisper) mode: {use_whisper}")
-
-    tk.Checkbutton(root, text="✨ Hinglish mode (Whisper) — Hindi + English together",
-                   variable=whisper_var, command=on_whisper_toggle,
-                   bg="#0c0f1a", fg=FG, selectcolor=CARD, activebackground="#0c0f1a",
-                   activeforeground=FG, font=("Segoe UI", 10), anchor="w"
-                   ).pack(fill="x", padx=22, pady=(10, 0))
+    tk.Label(root, text="Pick \"Hinglish (Roman)\" above for Hindi+English in Roman letters "
+                        "(kya kar rahe ho). Needs the free Groq key below.",
+             bg="#0c0f1a", fg=MUTED, font=("Segoe UI", 8), wraplength=390, justify="left"
+             ).pack(anchor="w", padx=24, pady=(6, 0))
 
     def set_key():
-        global whisper_key
-        k = simpledialog.askstring("Whisper (Groq) API Key",
+        global groq_key
+        k = simpledialog.askstring("Groq API Key",
                                    "Paste your free Groq key (console.groq.com/keys):", show="*")
         if k:
-            whisper_key = k.strip()
-            _config["whisper_key"] = whisper_key
+            groq_key = k.strip()
+            _config["groq_key"] = groq_key
             save_config()
-            messagebox.showinfo("Saved", "Groq key saved. Tick 'Hinglish mode' to use it.")
+            messagebox.showinfo("Saved", "Groq key saved. Pick 'Hinglish (Roman)' as the language to use it.")
 
-    tk.Button(root, text="Set Whisper (Groq) Key", command=set_key,
+    tk.Button(root, text="Set Groq API Key  (free — console.groq.com/keys)", command=set_key,
               bg=CARD, fg=FG, activebackground="#1f2740", activeforeground=FG,
               relief="flat", font=("Segoe UI", 10), cursor="hand2", padx=10, pady=6, bd=0
               ).pack(fill="x", padx=24, pady=(6, 0))

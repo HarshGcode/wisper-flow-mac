@@ -113,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let cleanup = NSMenuItem(title: "AI Cleanup (Claude)", action: #selector(toggleCleanup), keyEquivalent: "")
+        let cleanup = NSMenuItem(title: "AI Cleanup (Groq)", action: #selector(toggleCleanup), keyEquivalent: "")
         cleanup.target = self
         cleanup.state = Settings.cleanupEnabled ? .on : .off
         menu.addItem(cleanup)
@@ -133,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openTranscripts.target = self
         menu.addItem(openTranscripts)
 
-        let setKey = NSMenuItem(title: "Set Anthropic API Key…", action: #selector(setApiKey), keyEquivalent: "")
+        let setKey = NSMenuItem(title: "Set Groq API Key…", action: #selector(setGroqKey), keyEquivalent: "")
         setKey.target = self
         menu.addItem(setKey)
 
@@ -185,14 +185,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording = true
         partialItem.title = "Listening…"
         updateIcon()
-        if Settings.useWhisper { whisper.start() } else { speech.start() }
+        if Settings.isHinglish { whisper.start() } else { speech.start() }
     }
 
     private func stopRecording() {
         guard recording else { return }
         recording = false
         updateIcon()
-        if Settings.useWhisper { whisper.stop() } else { speech.stop() }
+        if Settings.isHinglish { whisper.stop() } else { speech.stop() }
     }
 
     private func handleFinal(_ text: String) {
@@ -201,7 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         partialItem.title = "Processing…"
-        Cleanup.clean(text) { [weak self] cleaned in
+        Cleanup.process(text, hinglish: Settings.isHinglish) { [weak self] cleaned in
             DispatchQueue.main.async {
                 TextInserter.insert(cleaned, autoPaste: Settings.autoPaste)
                 self?.partialItem.title = "Idle"
@@ -212,9 +212,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu actions
 
     @objc private func toggleCleanup(_ sender: NSMenuItem) {
-        if !Settings.cleanupEnabled && Settings.apiKey == nil {
-            showAlert(title: "API key required",
-                      text: "Set your Anthropic API key first (menu ▸ Set Anthropic API Key…).")
+        if !Settings.cleanupEnabled && Settings.groqKey == nil {
+            showAlert(title: "Groq key required",
+                      text: "Set your free Groq API key first (Set Groq API Key… button).")
             return
         }
         Settings.cleanupEnabled.toggle()
@@ -244,22 +244,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(MeetingTranscriber.transcriptsFolder)
     }
 
-    @objc func setApiKey() {
+    @objc func setGroqKey() {
         let alert = NSAlert()
-        alert.messageText = "Anthropic API Key"
-        alert.informativeText = "Used only for optional AI cleanup. Stored locally in your user defaults."
+        alert.messageText = "Groq API Key"
+        alert.informativeText = "One free key powers Hinglish (Whisper) and AI cleanup. Get it at console.groq.com/keys — it starts with \"gsk_\". Stored locally."
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Cancel")
 
         let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
-        field.stringValue = Settings.apiKey ?? ""
+        field.stringValue = Settings.groqKey ?? ""
         alert.accessoryView = field
         NSApp.activate(ignoringOtherApps: true)
         alert.window.initialFirstResponder = field  // so Cmd+V pastes right away
 
         if alert.runModal() == .alertFirstButtonReturn {
             let value = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            Settings.apiKey = value.isEmpty ? nil : value
+            Settings.groqKey = value.isEmpty ? nil : value
         }
     }
 

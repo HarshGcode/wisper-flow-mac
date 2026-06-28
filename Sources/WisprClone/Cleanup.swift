@@ -1,62 +1,60 @@
 import Foundation
 
-/// Optional AI cleanup of raw dictation using the Claude API.
-/// Removes filler words, fixes grammar/punctuation, and tidies formatting —
-/// without changing the meaning. Falls back to the raw text on any failure.
+/// Post-processes a transcript with a Groq-hosted LLM (same Groq key as Whisper).
+/// - Hinglish mode: ALWAYS romanize Hindi to Roman script + clean up.
+/// - Other languages: only runs if the user enabled "AI Cleanup".
 enum Cleanup {
-    static func clean(_ raw: String, completion: @escaping (String) -> Void) {
-        guard Settings.cleanupEnabled, let apiKey = Settings.apiKey else {
-            completion(raw)
-            return
-        }
+    static func process(_ raw: String, hinglish: Bool, completion: @escaping (String) -> Void) {
+        let shouldRun = hinglish || Settings.cleanupEnabled
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { completion(raw); return }
+        guard shouldRun, !trimmed.isEmpty, let key = Settings.groqKey,
+              let url = URL(string: "https://api.groq.com/openai/v1/chat/completions")
+        else { completion(raw); return }
 
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            completion(raw); return
+        let system: String
+        if hinglish {
+            system = """
+            You convert voice-dictation transcripts of Hindi+English (Hinglish) speech \
+            into clean ROMAN-script Hinglish — the way people actually type on a phone.
+            - Write Hindi words in Roman/Latin letters, NOT Devanagari. \
+              e.g. "क्या कर रहे हो" → "kya kar rahe ho".
+            - Keep English words as normal English.
+            - Remove fillers (um, uh, matlab), fix obvious recognition errors from context, \
+              add light punctuation. Keep the user's natural wording.
+            - Return ONLY the cleaned Roman Hinglish text, nothing else.
+            """
+        } else {
+            system = """
+            You are a dictation cleanup assistant. Remove filler words, fix grammar, \
+            capitalization and punctuation, and tidy formatting — without changing meaning. \
+            Do NOT add new information or commentary. Return ONLY the cleaned text.
+            """
         }
-
-        let system = """
-        You are a dictation cleanup assistant. The user dictated text by voice, often \
-        speaking FAST and in HINGLISH (a natural mix of Hindi and Indian English). The raw \
-        speech-to-text may contain recognition errors, wrong/garbled words, run-on words, \
-        and missing punctuation from fast speech.
-
-        Your job: produce what the user most likely meant.
-        - Fix obvious speech-recognition errors using context (e.g. a wrong word that sounds \
-          similar to the intended one).
-        - Keep the user's natural Hinglish style and wording — do NOT translate Hindi to \
-          English or vice-versa. Keep Hindi words in the script they appear in.
-        - Remove filler words (um, uh, matlab, like), fix grammar, capitalization, spacing, \
-          and punctuation.
-        - Do NOT add new information, do NOT answer questions in the text, do NOT add \
-          commentary or quotes. Return ONLY the cleaned text.
-        """
 
         let body: [String: Any] = [
-            "model": "claude-opus-4-8",
-            "max_tokens": 2000,
-            "system": system,
+            "model": "llama-3.3-70b-versatile",
+            "temperature": 0.2,
+            "max_tokens": 1024,
             "messages": [
-                ["role": "user", "content": trimmed]
-            ]
+                ["role": "system", "content": system],
+                ["role": "user", "content": trimmed],
+            ],
         ]
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 15
+        req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 20
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: req) { data, _, error in
             guard
-                error == nil,
-                let data,
+                error == nil, let data,
                 let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let content = json["content"] as? [[String: Any]],
-                let text = content.first?["text"] as? String,
+                let choices = json["choices"] as? [[String: Any]],
+                let message = choices.first?["message"] as? [String: Any],
+                let text = message["content"] as? String,
                 !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else {
                 completion(raw)

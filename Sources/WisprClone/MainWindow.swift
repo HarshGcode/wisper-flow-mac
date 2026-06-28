@@ -90,16 +90,13 @@ extension AppDelegate {
         langRow.addArrangedSubview(langPopup)
         stack.addArrangedSubview(langRow)
 
-        let whisperCheck = NSButton(checkboxWithTitle: "✨ Hinglish mode (Whisper) — best for Hindi + English together",
-                                    target: self, action: #selector(windowToggleWhisper(_:)))
-        whisperCheck.state = Settings.useWhisper ? .on : .off
-        stack.addArrangedSubview(whisperCheck)
+        let langHint = NSTextField(wrappingLabelWithString: "Pick \"Hinglish (Roman)\" for Hindi+English typed in Roman letters (kya kar rahe ho). Needs a free Groq key below.")
+        langHint.font = .systemFont(ofSize: 11)
+        langHint.textColor = .secondaryLabelColor
+        langHint.preferredMaxLayoutWidth = 400
+        stack.addArrangedSubview(langHint)
 
-        let whisperKeyBtn = NSButton(title: "Set Whisper (Groq) API Key…", target: self, action: #selector(setWhisperKey))
-        whisperKeyBtn.bezelStyle = .rounded
-        stack.addArrangedSubview(whisperKeyBtn)
-
-        let cleanup = NSButton(checkboxWithTitle: "AI Cleanup (Claude) — fix grammar & filler words",
+        let cleanup = NSButton(checkboxWithTitle: "AI Cleanup (Groq) — fix grammar & filler words",
                                target: self, action: #selector(windowToggleCleanup(_:)))
         cleanup.state = Settings.cleanupEnabled ? .on : .off
         winCleanupCheck = cleanup
@@ -116,7 +113,7 @@ extension AppDelegate {
         onDevice.state = Settings.onDeviceOnly ? .on : .off
         stack.addArrangedSubview(onDevice)
 
-        let apiBtn = NSButton(title: "Set Anthropic API Key…", target: self, action: #selector(setApiKey))
+        let apiBtn = NSButton(title: "Set Groq API Key…  (free — console.groq.com/keys)", target: self, action: #selector(setGroqKey))
         apiBtn.bezelStyle = .rounded
         stack.addArrangedSubview(apiBtn)
 
@@ -159,10 +156,10 @@ extension AppDelegate {
     // MARK: - Window control actions
 
     @objc func windowToggleCleanup(_ sender: NSButton) {
-        if sender.state == .on && Settings.apiKey == nil {
+        if sender.state == .on && Settings.groqKey == nil {
             sender.state = .off
-            showInfo(title: "API key required",
-                     text: "Set your Anthropic API key first (Set Anthropic API Key… button).")
+            showInfo(title: "Groq key required",
+                     text: "Set your free Groq API key first (Set Groq API Key… button).")
             return
         }
         Settings.cleanupEnabled = (sender.state == .on)
@@ -180,33 +177,6 @@ extension AppDelegate {
 
     @objc func windowToggleOnDevice(_ sender: NSButton) {
         Settings.onDeviceOnly = (sender.state == .on)
-    }
-
-    @objc func windowToggleWhisper(_ sender: NSButton) {
-        if sender.state == .on && Settings.whisperKey == nil {
-            sender.state = .off
-            showInfo(title: "Free Groq key needed",
-                     text: "Hinglish mode uses Whisper via Groq (free). Click \"Set Whisper (Groq) API Key…\" and paste a key from console.groq.com/keys")
-            return
-        }
-        Settings.useWhisper = (sender.state == .on)
-    }
-
-    @objc func setWhisperKey() {
-        let alert = NSAlert()
-        alert.messageText = "Whisper (Groq) API Key"
-        alert.informativeText = "Free key for Hinglish transcription. Get one at console.groq.com/keys — it starts with \"gsk_\"."
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
-        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
-        field.stringValue = Settings.whisperKey ?? ""
-        alert.accessoryView = field
-        NSApp.activate(ignoringOtherApps: true)
-        alert.window.initialFirstResponder = field  // so Cmd+V pastes right away
-        if alert.runModal() == .alertFirstButtonReturn {
-            let v = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            Settings.whisperKey = v.isEmpty ? nil : v
-        }
     }
 
     // MARK: - Small builders
