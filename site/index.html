@@ -97,7 +97,7 @@
   .card p { color: var(--muted); font-size: 15px; }
 
   /* Steps */
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
   .step { text-align: center; }
   .step .num {
     width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
@@ -151,6 +151,7 @@
         <a href="#how">How it works</a>
         <a href="#extension">Extension</a>
         <a href="#download">Download</a>
+        <a href="https://github.com/HarshGcode/wisper-flow-mac">GitHub</a>
       </div>
     </nav>
   </div>
@@ -159,12 +160,12 @@
     <div class="wrap">
       <img class="app-icon" src="icon@2x.png" alt="Wispr Clone icon" />
       <h1>Just talk. <span class="grad">Your words type themselves.</span></h1>
-      <p class="sub">Hold one key, speak naturally, and your words appear in any app on your Mac — email, Slack, docs, anywhere. All on-device.</p>
+      <p class="sub">Hold one key, speak naturally — in English, Hindi, or Hinglish — and your words appear in any app. Mac, Windows, or your browser. Private by default.</p>
       <a class="cta" id="download-top" href="#download">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4L11 13.6V4a1 1 0 0 1 1-1Z"/><path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
         Download for Mac
       </a>
-      <div class="meta">Free · macOS 14+ · Apple Silicon (M-series)</div>
+      <div class="meta">Free · open source · macOS, Windows & Chrome</div>
     </div>
   </header>
 
@@ -179,14 +180,44 @@
           <p>Works in every app — your browser, Messages, Notes, code editors, search bars. If you can type there, you can talk there.</p>
         </div>
         <div class="card">
-          <div class="ico">🔒</div>
-          <h3>On-device & private</h3>
-          <p>Your voice is transcribed locally on your Mac using Apple's speech engine. Nothing is uploaded. Works offline.</p>
+          <div class="ico">🌍</div>
+          <h3>Multiple languages</h3>
+          <p>English, Hindi, Spanish, French, German, Arabic, Mandarin — and a dedicated <strong>Hinglish (Roman)</strong> mode.</p>
         </div>
         <div class="card">
-          <div class="ico">✨</div>
-          <h3>AI cleanup (optional)</h3>
-          <p>Turn on Claude cleanup to automatically remove “um”s, fix grammar, and polish punctuation as you go.</p>
+          <div class="ico">🪔</div>
+          <h3>Hinglish, done right</h3>
+          <p>Speaks Hindi+English the way you actually type it — <em>"kya kar rahe ho"</em>, Roman letters, no translation, no Devanagari.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🔒</div>
+          <h3>On-device & private</h3>
+          <p>A bundled Whisper engine runs fully offline by default — no API key, nothing leaves your device.</p>
+        </div>
+        <div class="card">
+          <div class="ico">⚡</div>
+          <h3>Best-quality mode (optional)</h3>
+          <p>Add a free Groq key to switch to cloud Whisper large-v3 + AI cleanup for noticeably higher accuracy.</p>
+        </div>
+        <div class="card">
+          <div class="ico">📝</div>
+          <h3>Meeting transcription</h3>
+          <p>Transcribe your mic continuously during Zoom, Meet, or Teams calls into a timestamped text file.</p>
+        </div>
+        <div class="card">
+          <div class="ico">✂️</div>
+          <h3>Phrases</h3>
+          <p>Define text macros — say "my email" and it expands to your full address. Great for boilerplate.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🛡️</div>
+          <h3>Tamper detection</h3>
+          <p>The Mac app verifies its own code signature at launch and refuses to run if it's been modified.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🖥️</div>
+          <h3>Mac, Windows & browser</h3>
+          <p>A native app for macOS and Windows, plus a Chrome extension — pick whichever fits how you work.</p>
         </div>
         <div class="card">
           <div class="ico">⚡</div>
@@ -194,14 +225,14 @@
           <p>Release the key and your text is pasted in a blink. No round-trips, no waiting.</p>
         </div>
         <div class="card">
-          <div class="ico">🍏</div>
-          <h3>Built for Apple Silicon</h3>
-          <p>Native Swift app tuned for M-series chips. Lightweight, fast, and lives quietly in your menu bar.</p>
+          <div class="ico">📂</div>
+          <h3>Open source</h3>
+          <p>MIT-licensed and fully open on GitHub. Read the code, fork it, or contribute a fix.</p>
         </div>
         <div class="card">
           <div class="ico">🆓</div>
           <h3>Free</h3>
-          <p>No subscription, no account. Download it and start talking.</p>
+          <p>No subscription, no required account. Download it and start talking.</p>
         </div>
       </div>
     </div>
@@ -224,10 +255,16 @@
         </div>
         <div class="step">
           <div class="num">3</div>
+          <h3>Pick a language</h3>
+          <p>Choose English, Hindi, Hinglish (Roman), or one of 8 languages from the app window.</p>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
           <h3>Hold &amp; talk</h3>
           <p>Hold <kbd>Right ⌥ Option</kbd>, speak, release. Your words appear.</p>
         </div>
       </div>
+      <p class="lead" style="margin-top:28px; font-size:14px;">Works offline out of the box. Add a free <a href="https://console.groq.com/keys" style="color:var(--accent2);">Groq key</a> in the app for cloud-quality transcription and AI cleanup.</p>
     </div>
   </section>
 
@@ -295,7 +332,7 @@
               <li>If Windows shows a blue “protected your PC” box, click <strong>More info ▸ Run anyway</strong> (it's unsigned, like the Mac app — it's safe).</li>
               <li>A 🎙️ icon appears in the system tray. Click into any text field, <strong>hold Right Ctrl</strong>, speak, release — your words get typed.</li>
             </ol>
-            <p class="why">No Python or setup needed — everything is bundled in the .exe. Dictation uses Google's free speech engine.</p>
+            <p class="why">No Python or setup needed — everything is bundled in the .exe. Supports the same languages and Hinglish (Roman) mode as the Mac app — add a free Groq key in the app window for the best accuracy.</p>
           </div>
         </div>
       </div>
@@ -304,10 +341,12 @@
 
   <footer>
     <div class="wrap">
-      Wispr Clone — a personal voice-typing app for macOS.
+      Wispr Clone — a free, open-source voice-typing app for macOS, Windows & the browser.
+      <br />
+      <a href="https://github.com/HarshGcode/wisper-flow-mac" style="color:var(--accent2);">Source code on GitHub</a> · MIT licensed
       <div class="disclaimer">
         Not affiliated with, endorsed by, or connected to Wispr Flow or Wispr AI.
-        This is an independent hobby project inspired by the concept of voice dictation.
+        This is an independent open-source project inspired by the concept of voice dictation.
       </div>
     </div>
   </footer>
