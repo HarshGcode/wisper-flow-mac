@@ -113,7 +113,11 @@ extension AppDelegate {
         onDevice.state = Settings.onDeviceOnly ? .on : .off
         stack.addArrangedSubview(onDevice)
 
-        let apiBtn = NSButton(title: "Set Groq API Key…  (free — console.groq.com/keys)", target: self, action: #selector(setGroqKey))
+        let phrasesBtn = NSButton(title: "Manage Phrases (text shortcuts)…", target: self, action: #selector(managePhrases))
+        phrasesBtn.bezelStyle = .rounded
+        stack.addArrangedSubview(phrasesBtn)
+
+        let apiBtn = NSButton(title: "Set Groq API Key…  (optional — for AI cleanup)", target: self, action: #selector(setGroqKey))
         apiBtn.bezelStyle = .rounded
         stack.addArrangedSubview(apiBtn)
 
@@ -177,6 +181,31 @@ extension AppDelegate {
 
     @objc func windowToggleOnDevice(_ sender: NSButton) {
         Settings.onDeviceOnly = (sender.state == .on)
+    }
+
+    @objc func managePhrases() {
+        let alert = NSAlert()
+        alert.messageText = "Phrases — text shortcuts"
+        alert.informativeText = "One per line, as  trigger = expansion.\nSpeak the trigger and it expands.\nExample:\n  my email = harsh@example.com"
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 380, height: 160))
+        let textView = NSTextView(frame: scroll.bounds)
+        textView.string = Settings.phrasesRaw
+        textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.isRichText = false
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        scroll.documentView = textView
+        scroll.hasVerticalScroller = true
+        scroll.borderType = .bezelBorder
+        alert.accessoryView = scroll
+        NSApp.activate(ignoringOtherApps: true)
+        alert.window.initialFirstResponder = textView
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            Settings.phrasesRaw = textView.string
+        }
     }
 
     // MARK: - Small builders

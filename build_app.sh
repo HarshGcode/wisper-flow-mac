@@ -23,6 +23,16 @@ cp Info.plist "${BUNDLE}/Contents/Info.plist"
 if [ -f tools/AppIcon.icns ]; then
     cp tools/AppIcon.icns "${BUNDLE}/Contents/Resources/AppIcon.icns"
 fi
+# Bundle the on-device Whisper engine (binary + model) so transcription needs
+# no API key and works offline. See tools/setup_whisper.sh to (re)create them.
+if [ -f whisper/whisper-cli ] && [ -f whisper/ggml-base.bin ]; then
+    cp whisper/whisper-cli "${BUNDLE}/Contents/Resources/whisper-cli"
+    cp whisper/ggml-base.bin "${BUNDLE}/Contents/Resources/ggml-base.bin"
+    chmod +x "${BUNDLE}/Contents/Resources/whisper-cli"
+    echo "    bundled local Whisper engine"
+else
+    echo "    ⚠️  whisper/ engine missing — run tools/setup_whisper.sh (local Whisper disabled)"
+fi
 
 # Pick a signing identity:
 #   1. Whatever the caller passed (release.sh uses a Developer ID).
@@ -36,6 +46,11 @@ if [ -z "${SIGN_IDENTITY:-}" ]; then
     else
         SIGN_IDENTITY="-"
     fi
+fi
+# Sign the nested Whisper binary first so the whole bundle is consistently signed.
+if [ -f "${BUNDLE}/Contents/Resources/whisper-cli" ]; then
+    codesign --force --sign "${SIGN_IDENTITY}" --options runtime \
+        "${BUNDLE}/Contents/Resources/whisper-cli" 2>/dev/null || true
 fi
 echo "==> Code signing (identity: ${SIGN_IDENTITY})…"
 codesign --force --deep \

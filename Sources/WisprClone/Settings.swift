@@ -10,6 +10,14 @@ enum Settings {
         static let language = "speechLanguage"
         static let onDeviceOnly = "onDeviceOnly"
         static let groqKey = "groqApiKey"
+        static let phrases = "phrasesRaw"
+    }
+
+    /// Phrases (text macros), edited as "trigger = expansion" lines. Speaking a
+    /// trigger expands to the full text — e.g. "my email = you@example.com".
+    static var phrasesRaw: String {
+        get { d.string(forKey: Keys.phrases) ?? "" }
+        set { d.set(newValue, forKey: Keys.phrases) }
     }
 
     /// Single API key — Groq powers both Whisper (Hinglish transcription) and the

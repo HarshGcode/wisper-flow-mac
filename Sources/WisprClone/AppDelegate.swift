@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let speech = SpeechService()
     private let whisper = WhisperService()
+    private let localWhisper = LocalWhisperService()
     private let hotkeys = HotkeyManager()
     let meeting = MeetingTranscriber()
     var recordingPublic: Bool { recording }
@@ -175,6 +176,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         whisper.onFinal = { [weak self] text in
             self?.handleFinal(text)
         }
+
+        localWhisper.onPartial = { [weak self] text in
+            self?.partialItem.title = text
+        }
+        localWhisper.onError = { [weak self] msg in
+            self?.partialItem.title = "Error: \(msg)"
+        }
+        localWhisper.onFinal = { [weak self] text in
+            self?.handleFinal(text)
+        }
     }
 
     // MARK: - Recording flow
@@ -185,14 +196,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording = true
         partialItem.title = "Listening…"
         updateIcon()
-        if Settings.isHinglish { whisper.start() } else { speech.start() }
+        // Prefer the bundled on-device Whisper (no API key). Fall back to cloud/OS.
+        if LocalWhisperService.isAvailable { localWhisper.start() }
+        else if Settings.isHinglish { whisper.start() }
+        else { speech.start() }
     }
 
     private func stopRecording() {
         guard recording else { return }
         recording = false
         updateIcon()
-        if Settings.isHinglish { whisper.stop() } else { speech.stop() }
+        if LocalWhisperService.isAvailable { localWhisper.stop() }
+        else if Settings.isHinglish { whisper.stop() }
+        else { speech.stop() }
     }
 
     private func handleFinal(_ text: String) {
@@ -203,7 +219,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         partialItem.title = "Processing…"
         Cleanup.process(text, hinglish: Settings.isHinglish) { [weak self] cleaned in
             DispatchQueue.main.async {
-                TextInserter.insert(cleaned, autoPaste: Settings.autoPaste)
+                let final = Phrases.apply(cleaned)   // expand text macros
+                TextInserter.insert(final, autoPaste: Settings.autoPaste)
                 self?.partialItem.title = "Idle"
             }
         }
