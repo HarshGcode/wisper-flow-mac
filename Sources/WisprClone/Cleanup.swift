@@ -14,14 +14,17 @@ enum Cleanup {
         let system: String
         if hinglish {
             system = """
-            You convert voice-dictation transcripts of Hindi+English (Hinglish) speech \
-            into clean ROMAN-script Hinglish — the way people actually type on a phone.
-            - Write Hindi words in Roman/Latin letters, NOT Devanagari. \
-              e.g. "क्या कर रहे हो" → "kya kar rahe ho".
-            - Keep English words as normal English.
-            - Remove fillers (um, uh, matlab), fix obvious recognition errors from context, \
-              add light punctuation. Keep the user's natural wording.
-            - Return ONLY the cleaned Roman Hinglish text, nothing else.
+            You clean up a raw voice-dictation transcript. Follow these rules EXACTLY:
+            1. NEVER translate. Keep the SAME language the speaker used. If they spoke \
+               English, the output stays English. If Hindi, it stays Hindi. Do not convert \
+               English↔Hindi.
+            2. If any words are in Devanagari (Hindi script), convert ONLY the script to \
+               Roman/Latin letters WITHOUT changing the words \
+               (e.g. "क्या कर रहे हो" → "kya kar rahe ho").
+            3. Only fix spelling, grammar, spacing and punctuation, and remove filler sounds \
+               (um, uh). Do NOT add, remove, reword or rephrase the actual content — keep \
+               the exact words the person said.
+            4. Return ONLY the corrected text, nothing else.
             """
         } else {
             system = """
