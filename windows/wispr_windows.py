@@ -132,14 +132,18 @@ def groq_chat(text, system):
 
 
 ROMANIZE_PROMPT = (
-    "You clean up a raw voice-dictation transcript. Rules EXACTLY:\n"
-    "1. NEVER translate. Keep the SAME language the speaker used — English stays English, "
-    "Hindi stays Hindi. Do not convert English to Hindi or Hindi to English.\n"
-    "2. If any words are in Devanagari (Hindi script), convert ONLY the script to Roman/Latin "
-    "letters without changing the words (e.g. 'क्या कर रहे हो' -> 'kya kar rahe ho').\n"
-    "3. Only fix spelling, grammar, spacing and punctuation, and remove fillers (um, uh). Do "
-    "NOT add, remove, reword or rephrase the actual content.\n"
-    "4. Return ONLY the corrected text, nothing else."
+    "You clean up a raw voice-dictation transcript that may contain recognition noise. "
+    "Rules EXACTLY:\n"
+    "1. NEVER translate. Keep the SAME language(s) the speaker used — English stays English, "
+    "Hindi stays Hindi.\n"
+    "2. The output must be ONLY in Roman/Latin letters. Convert any non-Latin script "
+    "(Devanagari, Arabic, etc.) to Roman phonetically without changing words "
+    "(e.g. 'क्या कर रहे हो' -> 'kya kar rahe ho').\n"
+    "3. Remove obvious recognition junk: repeated/duplicated phrases, and any short fragment "
+    "in a language unrelated to the rest that is clearly a mis-recognition (hallucination).\n"
+    "4. Otherwise keep the exact words. Only fix spelling, grammar, spacing and punctuation. "
+    "Do NOT add or reword content.\n"
+    "5. Return ONLY the cleaned text, nothing else."
 )
 
 

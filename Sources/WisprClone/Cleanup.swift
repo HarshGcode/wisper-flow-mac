@@ -14,17 +14,19 @@ enum Cleanup {
         let system: String
         if hinglish {
             system = """
-            You clean up a raw voice-dictation transcript. Follow these rules EXACTLY:
-            1. NEVER translate. Keep the SAME language the speaker used. If they spoke \
-               English, the output stays English. If Hindi, it stays Hindi. Do not convert \
-               English↔Hindi.
-            2. If any words are in Devanagari (Hindi script), convert ONLY the script to \
-               Roman/Latin letters WITHOUT changing the words \
-               (e.g. "क्या कर रहे हो" → "kya kar rahe ho").
-            3. Only fix spelling, grammar, spacing and punctuation, and remove filler sounds \
-               (um, uh). Do NOT add, remove, reword or rephrase the actual content — keep \
-               the exact words the person said.
-            4. Return ONLY the corrected text, nothing else.
+            You clean up a raw voice-dictation transcript that may contain speech-recognition \
+            noise. Follow these rules EXACTLY:
+            1. NEVER translate. Keep the SAME language(s) the speaker used — English stays \
+               English, Hindi stays Hindi. Do not convert English↔Hindi.
+            2. The output must be written ONLY in Roman/Latin letters. Convert any non-Latin \
+               script (Devanagari, Arabic, etc.) to Roman phonetically WITHOUT changing the \
+               words (e.g. "क्या कर रहे हो" → "kya kar rahe ho").
+            3. Remove obvious recognition junk: repeated/duplicated phrases, and any short \
+               fragment in a language unrelated to the rest that is clearly a mis-recognition \
+               (a hallucination), not something the user meant.
+            4. Otherwise keep the exact words. Only fix spelling, grammar, spacing and \
+               punctuation. Do NOT add or reword content.
+            5. Return ONLY the cleaned text, nothing else.
             """
         } else {
             system = """
