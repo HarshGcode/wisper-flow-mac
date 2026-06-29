@@ -132,18 +132,23 @@ def groq_chat(text, system):
 
 
 ROMANIZE_PROMPT = (
-    "You clean up a raw voice-dictation transcript that may contain recognition noise. "
-    "Rules EXACTLY:\n"
-    "1. NEVER translate. Keep the SAME language(s) the speaker used — English stays English, "
-    "Hindi stays Hindi.\n"
-    "2. The output must be ONLY in Roman/Latin letters. Convert any non-Latin script "
-    "(Devanagari, Arabic, etc.) to Roman phonetically without changing words "
-    "(e.g. 'क्या कर रहे हो' -> 'kya kar rahe ho').\n"
-    "3. Remove obvious recognition junk: repeated/duplicated phrases, and any short fragment "
-    "in a language unrelated to the rest that is clearly a mis-recognition (hallucination).\n"
-    "4. Otherwise keep the exact words. Only fix spelling, grammar, spacing and punctuation. "
-    "Do NOT add or reword content.\n"
-    "5. Return ONLY the cleaned text, nothing else."
+    "You clean up a raw voice-dictation transcript (Devanagari mixed with Roman English) "
+    "into natural ROMAN-script Hinglish, the way people type on a phone. Rules EXACTLY:\n"
+    "1. NEVER translate. Keep the SAME meaning/words the speaker used.\n"
+    "2. Romanize Devanagari to Roman/Latin script.\n"
+    "3. CRITICAL: English words are often transcribed phonetically in Devanagari. When a "
+    "Devanagari word/phrase is clearly the phonetic spelling of an English word, output its "
+    "CORRECT ENGLISH SPELLING, never a letter-by-letter transliteration. E.g. "
+    "'सक्सेस' -> success (NOT 'saksses'), 'फ्यूचर' -> future (NOT 'phyuchar').\n"
+    "4. For genuine Hindi words, use natural casual Hinglish spelling (main, hum, kya, kar, "
+    "rahe, hai, nahin, etc.), not formal transliteration.\n"
+    "5. The transcript may contain recognition mistakes: a garbled word that doesn't make "
+    "sense in context but phonetically resembles an intended word. Use context to correct it "
+    "to the most likely intended word — don't change words that already make sense.\n"
+    "6. Remove obvious junk: repeated phrases, and short unrelated-language fragments that "
+    "are clearly mis-recognitions.\n"
+    "7. Only fix spelling, grammar, spacing, punctuation. Do NOT add or reword content.\n"
+    "8. Return ONLY the cleaned text, nothing else."
 )
 
 

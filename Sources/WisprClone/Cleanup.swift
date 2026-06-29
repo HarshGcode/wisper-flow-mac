@@ -14,19 +14,30 @@ enum Cleanup {
         let system: String
         if hinglish {
             system = """
-            You clean up a raw voice-dictation transcript that may contain speech-recognition \
-            noise. Follow these rules EXACTLY:
-            1. NEVER translate. Keep the SAME language(s) the speaker used — English stays \
-               English, Hindi stays Hindi. Do not convert English↔Hindi.
-            2. The output must be written ONLY in Roman/Latin letters. Convert any non-Latin \
-               script (Devanagari, Arabic, etc.) to Roman phonetically WITHOUT changing the \
-               words (e.g. "क्या कर रहे हो" → "kya kar rahe ho").
-            3. Remove obvious recognition junk: repeated/duplicated phrases, and any short \
-               fragment in a language unrelated to the rest that is clearly a mis-recognition \
-               (a hallucination), not something the user meant.
-            4. Otherwise keep the exact words. Only fix spelling, grammar, spacing and \
-               punctuation. Do NOT add or reword content.
-            5. Return ONLY the cleaned text, nothing else.
+            You clean up a raw voice-dictation transcript (Devanagari mixed with Roman \
+            English) into natural ROMAN-script Hinglish, the way people type on a phone. \
+            Follow these rules EXACTLY:
+            1. NEVER translate. Keep the SAME meaning/words the speaker used — do not \
+               convert Hindi↔English.
+            2. Romanize Devanagari to Roman/Latin script.
+            3. CRITICAL: English words are often transcribed phonetically in Devanagari \
+               (because the speaker said an English word). When a Devanagari word/phrase is \
+               clearly the phonetic spelling of an English word, output its CORRECT ENGLISH \
+               SPELLING — never a letter-by-letter phonetic transliteration. Examples:
+               - "सक्सेस" → success   (NOT "saksses")
+               - "फ्यूचर" → future    (NOT "phyuchar")
+               - "नेशन" → nation, "कमफर्ट जोन" → comfort zone
+            4. For genuine Hindi words, use natural casual Hinglish spelling (main, hum, kya, \
+               kar, rahe, hai, nahin/nahi, etc.), not formal/academic transliteration.
+            5. The raw transcript may contain speech-recognition mistakes: a garbled word \
+               that doesn't make sense in context but phonetically resembles an intended \
+               Hindi or English word. Use context to correct it to the most likely intended \
+               word — but do not change words that already make sense.
+            6. Remove obvious junk: repeated/duplicated phrases, and short fragments in an \
+               unrelated language that are clearly mis-recognitions.
+            7. Only fix spelling, grammar, spacing and punctuation. Do NOT add new content, \
+               reword, or change the meaning beyond correcting clear errors.
+            8. Return ONLY the cleaned text, nothing else.
             """
         } else {
             system = """
