@@ -4,6 +4,18 @@ import Foundation
 /// - Hinglish mode: ALWAYS romanize Hindi to Roman script + clean up.
 /// - Other languages: only runs if the user enabled "AI Cleanup".
 enum Cleanup {
+    /// Logs only FAILURES (so a transient network blip that silently fell back
+    /// to raw text is diagnosable afterwards).
+    private static func logFailure(_ reason: String, raw: String) {
+        let line = "[\(Date())] CLEANUP FAILED: \(reason) — input: \(raw.prefix(80))\n"
+        let url = URL(fileURLWithPath: NSTemporaryDirectory() + "wispr_cleanup_errors.log")
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.close()
+        } else {
+            try? line.data(using: .utf8)?.write(to: url)
+        }
+    }
+
     static func process(_ raw: String, hinglish: Bool, completion: @escaping (String) -> Void) {
         let shouldRun = hinglish || Settings.cleanupEnabled
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -57,16 +69,49 @@ enum Cleanup {
         req.timeoutInterval = 20
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        URLSession.shared.dataTask(with: req) { data, _, error in
+        attempt(req, raw: raw, attemptsLeft: 2, completion: completion)
+    }
+
+    /// Retries once on transient failure (network blip, timeout) before giving
+    /// up and returning the raw text — so a single hiccup doesn't silently
+    /// skip cleanup.
+    private static func attempt(
+        _ req: URLRequest, raw: String, attemptsLeft: Int,
+        completion: @escaping (String) -> Void
+    ) {
+        URLSession.shared.dataTask(with: req) { data, response, error in
+            let httpCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+
+            if let error {
+                if attemptsLeft > 1 {
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.6) {
+                        attempt(req, raw: raw, attemptsLeft: attemptsLeft - 1, completion: completion)
+                    }
+                } else {
+                    logFailure("network error: \(error.localizedDescription)", raw: raw)
+                    completion(raw)
+                }
+                return
+            }
+
             guard
-                error == nil, let data,
+                let data,
                 let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let choices = json["choices"] as? [[String: Any]],
                 let message = choices.first?["message"] as? [String: Any],
                 let text = message["content"] as? String,
                 !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else {
-                completion(raw)
+                let bodyPreview = String(data: data ?? Data(), encoding: .utf8)?.prefix(200) ?? ""
+                if attemptsLeft > 1 && (httpCode == 429 || httpCode >= 500) {
+                    // Rate-limited or server hiccup — worth a retry.
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.8) {
+                        attempt(req, raw: raw, attemptsLeft: attemptsLeft - 1, completion: completion)
+                    }
+                } else {
+                    logFailure("http \(httpCode), body: \(bodyPreview)", raw: raw)
+                    completion(raw)
+                }
                 return
             }
             completion(text.trimmingCharacters(in: .whitespacesAndNewlines))
