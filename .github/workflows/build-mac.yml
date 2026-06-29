@@ -1,0 +1,45 @@
+name: Build macOS DMG
+
+# Builds the Mac app + .dmg on a GitHub-hosted macOS runner and attaches it to
+# the v1.0 release whenever the Mac app or its on-device Whisper setup
+# changes — same idea as build-windows.yml, so the website's Mac download
+# never goes stale again.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "Sources/WisprClone/**"
+      - "build_app.sh"
+      - "Info.plist"
+      - "WisprClone.entitlements"
+      - "Package.swift"
+      - "tools/setup_whisper.sh"
+      - ".github/workflows/build-mac.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the on-device Whisper engine
+        run: ./tools/setup_whisper.sh
+
+      - name: Build the app (ad-hoc signed)
+        run: ./build_app.sh
+
+      - name: Create the .dmg
+        run: |
+          APP_NAME="Wispr Clone"
+          mkdir -p build/dmg-stage
+          cp -R "build/${APP_NAME}.app" build/dmg-stage/
+          ln -s /Applications build/dmg-stage/Applications
+          hdiutil create -volname "${APP_NAME}" -srcfolder build/dmg-stage -ov -format UDZO "build/Wispr-Clone.dmg"
+
+      - name: Upload to the v1.0 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload v1.0 build/Wispr-Clone.dmg --clobber --repo ${{ github.repository }}
