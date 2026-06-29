@@ -1,64 +1,100 @@
 # Wispr Clone
 
-A minimal voice-dictation app for macOS (Apple Silicon), inspired by Wispr Flow.
-Hold a hotkey, speak, and the transcribed text is pasted into whatever app you're using.
+Hold a key, speak, release — your words appear wherever your cursor is.
+A free, open-source voice-dictation app inspired by [Wispr Flow](https://wisprflow.ai),
+built for **macOS**, **Windows**, and the **browser**.
 
-- **On-device transcription** via Apple's `SFSpeechRecognizer` — no API key, fully offline.
-- **Optional AI cleanup** with Claude (removes filler words, fixes grammar/punctuation). Off by default.
-- **Menu-bar app** — no Dock icon, no window.
+🌐 **Website & downloads:** https://wisper-flow-mac.vercel.app
 
-## Build
+## Features
 
+- 🎙️ **Push-to-talk dictation** — hold a hotkey, speak, release, text is typed in.
+- 🌍 **Multiple languages**, including a **Hinglish (Roman) mode** that transcribes
+  mixed Hindi+English speech into natural Roman-script text (`kya kar rahe ho`),
+  not Devanagari and not translated.
+- 📝 **Meeting transcription** — continuously transcribe your mic during Zoom/Meet/Teams
+  calls into a timestamped text file.
+- 🔒 **On-device transcription available** — a bundled [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+  engine runs fully offline, no API key required.
+- ⚡ **Best-quality cloud mode (optional)** — add a free [Groq](https://console.groq.com/keys)
+  key to use cloud Whisper (`large-v3`) + an LLM cleanup pass for noticeably higher accuracy.
+- ✂️ **Phrases** — define text macros ("trigger = expansion") that expand as you speak.
+- 🧩 **Chrome extension** — dictate into any website, no install needed beyond the browser.
+- 🛡️ **Self-integrity check (macOS)** — the app verifies its own code signature at
+  launch and refuses to run if it's been tampered with.
+
+## Platforms
+
+| Platform | Where | Tech |
+|---|---|---|
+| macOS | [`Sources/WisprClone/`](Sources/WisprClone) | Swift, AppKit |
+| Windows | [`windows/`](windows) | Python |
+| Browser | [`extension/`](extension) | Manifest V3 JS |
+
+See [STRUCTURE.md](STRUCTURE.md) for exactly which files belong to which platform.
+
+## Quick start
+
+### macOS
 ```bash
 ./build_app.sh
 open "build/Wispr Clone.app"
 ```
+Requires the Swift toolchain (Xcode Command Line Tools). Grant **Microphone**,
+**Speech Recognition**, and **Accessibility** in System Settings → Privacy & Security
+on first launch, then relaunch.
 
-Requires the Swift toolchain (Command Line Tools). No full Xcode needed.
+For on-device Whisper (no API key), first run:
+```bash
+./tools/setup_whisper.sh
+```
 
-## First launch — grant permissions
+### Windows
+```bat
+cd windows
+pip install -r requirements.txt
+python wispr_windows.py
+```
+See [windows/README.md](windows/README.md) for the standalone `.exe` build and full setup.
 
-On first run macOS will ask for, or you'll need to enable in
-**System Settings ▸ Privacy & Security**:
-
-1. **Microphone** — to record your voice.
-2. **Speech Recognition** — to transcribe on-device.
-3. **Accessibility** — to detect the hotkey globally and paste text.
-
-After granting Accessibility, **relaunch the app** (`open "build/Wispr Clone.app"`).
+### Chrome extension
+Load `extension/` as an unpacked extension via `chrome://extensions` (Developer Mode →
+Load unpacked). See [extension/README.md](extension/README.md).
 
 ## Usage
 
-- **Hold the Right Option (⌥) key** and speak. Release to stop.
-- The text is transcribed and pasted into the focused app (or copied to the
-  clipboard if auto-paste is off).
-- Click the menu-bar mic icon for options:
-  - **AI Cleanup (Claude)** — toggle LLM cleanup of the transcript.
-  - **Auto-paste into focused app** — toggle paste vs. clipboard-only.
-  - **Set Anthropic API Key…** — required only for AI Cleanup. Stored locally.
+1. Click into any text field.
+2. **Hold the hotkey** (Right ⌥ Option on Mac, Right Ctrl on Windows), speak, release.
+3. Your words appear at the cursor.
 
-## AI cleanup
+Open the app window or menu/tray icon to:
+- Pick a **language**, including Hinglish (Roman).
+- Start/stop **Meeting Transcription** and open the saved transcripts folder.
+- Manage **Phrases** (text macros).
+- Set a free **Groq API key** for cloud-quality transcription and AI cleanup.
 
-Cleanup is optional and off by default. To enable:
-1. Menu ▸ **Set Anthropic API Key…** (or set the `ANTHROPIC_API_KEY` env var).
-2. Menu ▸ **AI Cleanup (Claude)**.
+## Transcription engines
 
-Cleanup never changes meaning — it only removes filler words and fixes
-grammar/punctuation/formatting. On any network error it falls back to the raw text.
+| Mode | Engine | Needs a key? | Notes |
+|---|---|---|---|
+| Default (no key) | Bundled on-device whisper.cpp | No | Fully offline, private |
+| With a Groq key | Cloud Whisper `large-v3` | Yes (free) | Best accuracy, especially for Hindi/Hinglish |
+| Cleanup pass | Groq-hosted LLM | Yes (free) | Optional grammar fix / Hinglish romanization |
 
-## Project layout
+Get a free Groq key at [console.groq.com/keys](https://console.groq.com/keys) — no cost,
+used only for transcription/cleanup, never sent anywhere else.
 
-| File | Purpose |
-|------|---------|
-| `Sources/WisprClone/main.swift` | App entry point (accessory/menu-bar mode) |
-| `AppDelegate.swift` | Status item, menu, wiring, permission flow |
-| `SpeechService.swift` | Mic capture + on-device speech recognition |
-| `HotkeyManager.swift` | Push-to-talk global hotkey (Right ⌥) |
-| `TextInserter.swift` | Pasteboard + synthesized ⌘V insertion |
-| `Cleanup.swift` | Optional Claude API cleanup |
-| `Settings.swift` | Persisted settings (UserDefaults) |
+## Contributing
 
-## Customizing the hotkey
+Issues and PRs are welcome. The codebase is intentionally small and readable —
+see [STRUCTURE.md](STRUCTURE.md) to find the right file before changing something.
 
-The push-to-talk key is Right Option (virtual keycode `61`) in
-`HotkeyManager.swift`. Change `rightOptionKeyCode` to use a different modifier.
+## Acknowledgements
+
+Inspired by [Wispr Flow](https://wisprflow.ai). Not affiliated with it.
+[soll](https://github.com/mithun-builds/soll) is a similar local-first macOS-only
+dictation app worth checking out.
+
+## License
+
+[MIT](LICENSE)
