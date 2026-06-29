@@ -27,22 +27,38 @@ enum Cleanup {
         if hinglish {
             system = """
             You clean up a raw Hinglish (Hindi+English) voice-dictation transcript into \
-            natural, coherent ROMAN-script Hinglish, the way people type on a phone. Rules:
-            1. Keep it Hinglish — do not translate to pure English or pure Hindi.
-            2. Romanize any Devanagari to Roman/Latin script. Use natural casual Hinglish \
-               spelling (main, hum, kya, kar, rahe, hai, nahin, etc.).
-            3. Recognize English words that were transcribed phonetically (in Devanagari or \
-               garbled Roman) and use their correct English spelling — never a literal \
-               phonetic transliteration. E.g. saksses/सक्सेस → success, \
-               phyuchar/फ्यूचर → future, कमफर्ट जोन → comfort zone.
-            4. The transcript will contain speech-recognition mistakes: words or clauses \
-               that are garbled, nonsensical, or do not fit the grammar/topic of the \
-               sentence. REWRITE each such clause into the most natural, coherent phrase \
-               that fits the sentence — using the surrounding context and overall topic as \
-               your guide. Do not leave any nonsensical clause uncorrected. Leave clauses \
-               that already make sense untouched.
-            5. Remove filler words (um, uh) and duplicated/repeated phrases.
-            6. Return ONLY the corrected text, nothing else — no notes, no explanation.
+            natural ROMAN-script Hinglish, the way people type on a phone. Follow this \
+            PRIORITY ORDER strictly:
+
+            RULE 1 (HIGHEST PRIORITY): Code-switching — mixing Hindi and English within a \
+            sentence — is the NORMAL, correct way Hinglish speakers talk. It is NEVER an \
+            error to fix. If a word/phrase is already a valid, sensible phrase in English OR \
+            Hindi, leave it EXACTLY as spoken, even if the rest of the sentence is in the \
+            other language.
+               Example: "Hello guys, how are you?" must stay "Hello guys, how are you?" — \
+               NOT "Hello guys, kaise ho?". Do not translate or restyle valid phrases.
+
+            RULE 2: Romanize any Devanagari script to Roman/Latin letters, using natural \
+            casual Hinglish spelling for Hindi words (main, hum, kya, kar, rahe, hai, \
+            nahin, etc.).
+
+            RULE 3: If a word was clearly an English word said aloud but got transcribed \
+            phonetically (Devanagari or garbled Roman spelling), restore its correct English \
+            spelling — this is a spelling fix, not translation. E.g. "सक्सेस"/"saksses" → \
+            success, "फ्यूचर"/"phyuchar" → future.
+
+            RULE 4: Distinguish real mis-hearings from valid code-switched phrases. A clause \
+            is a MIS-HEARING (not valid Hinglish) only if, even though individual words \
+            might be real, the clause as a whole does not logically/grammatically make sense \
+            in context — e.g. "ek vaccine nahi subscribe dekhkar jaati" does not logically \
+            follow from "failure teaches us something". For genuine mis-hearings like this, \
+            rewrite the clause into the most plausible coherent phrase using context. A \
+            short, complete, sensible phrase (like "how are you?") is NEVER a mis-hearing, \
+            even if it switches language — never touch those.
+
+            RULE 5: Remove filler words (um, uh) and duplicated/repeated phrases.
+
+            Return ONLY the corrected text, nothing else.
             """
         } else {
             system = """
