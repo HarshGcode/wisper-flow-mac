@@ -19,6 +19,19 @@ final class WhisperService {
         }
     }
 
+    private func whisperLang(_ id: String) -> String {
+        switch id {
+        case "hinglish", "hi-IN": return "hi"
+        case "en-US", "en-IN":    return "en"
+        case "es-ES": return "es"
+        case "fr-FR": return "fr"
+        case "de-DE": return "de"
+        case "ar-SA": return "ar"
+        case "zh-CN": return "zh"
+        default:      return "auto"
+        }
+    }
+
     func start() {
         guard Settings.groqKey != nil else {
             onError?("Set your Whisper (Groq) API key first")
@@ -74,10 +87,13 @@ final class WhisperService {
             part("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n")
             part("\(value)\r\n")
         }
-        field("model", "whisper-large-v3")          // multilingual; auto-detects Hindi+English
+        field("model", "whisper-large-v3")
         field("response_format", "text")
         field("temperature", "0")
-        // No "language" field → Whisper auto-detects and keeps the natural Hinglish mix.
+        // Transcribe (never translate) in the spoken language. Hinglish → Hindi,
+        // then romanized downstream.
+        let lang = whisperLang(Settings.language)
+        if lang != "auto" { field("language", lang) }
         part("--\(boundary)\r\n")
         part("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n")
         part("Content-Type: audio/m4a\r\n\r\n")

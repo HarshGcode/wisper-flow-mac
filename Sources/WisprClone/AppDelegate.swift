@@ -196,9 +196,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording = true
         partialItem.title = "Listening…"
         updateIcon()
-        // Prefer the bundled on-device Whisper (no API key). Fall back to cloud/OS.
-        if LocalWhisperService.isAvailable { localWhisper.start() }
-        else if Settings.isHinglish { whisper.start() }
+        // Best quality: cloud Whisper (large-v3) when a Groq key is set and the
+        // user hasn't forced offline. Otherwise the bundled on-device Whisper
+        // (no key), then the OS engine.
+        let useCloud = (Settings.groqKey != nil) && !Settings.onDeviceOnly
+        if useCloud { whisper.start() }
+        else if LocalWhisperService.isAvailable { localWhisper.start() }
         else { speech.start() }
     }
 
@@ -206,8 +209,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard recording else { return }
         recording = false
         updateIcon()
-        if LocalWhisperService.isAvailable { localWhisper.stop() }
-        else if Settings.isHinglish { whisper.stop() }
+        let useCloud = (Settings.groqKey != nil) && !Settings.onDeviceOnly
+        if useCloud { whisper.stop() }
+        else if LocalWhisperService.isAvailable { localWhisper.stop() }
         else { speech.stop() }
     }
 
@@ -217,7 +221,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         partialItem.title = "Processing…"
-        Cleanup.process(text, hinglish: Settings.isHinglish) { [weak self] cleaned in
+        // Hinglish: with a Groq key the cleanup LLM romanizes+polishes the
+        // Devanagari; without a key, romanize deterministically here (ICU).
+        var input = text
+        if Settings.isHinglish && Settings.groqKey == nil {
+            input = Romanize.toLatin(text)
+        }
+        Cleanup.process(input, hinglish: Settings.isHinglish) { [weak self] cleaned in
             DispatchQueue.main.async {
                 let final = Phrases.apply(cleaned)   // expand text macros
                 TextInserter.insert(final, autoPaste: Settings.autoPaste)

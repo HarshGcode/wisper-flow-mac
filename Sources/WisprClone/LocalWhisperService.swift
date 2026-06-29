@@ -85,23 +85,10 @@ final class LocalWhisperService {
             return ""
         }
         let data = out.fileHandleForReading.readDataToEndOfFile()
-        var text = (String(data: data, encoding: .utf8) ?? "")
+        // Return the raw transcript (native script). Hinglish romanization happens
+        // in handleFinal so it's consistent across local + cloud engines.
+        return (String(data: data, encoding: .utf8) ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Hinglish: Whisper TRANSCRIBES accurately (Hindi in Devanagari). We then
-        // romanize the script to Latin deterministically (no translation, no key),
-        // keeping English words as-is. e.g. "मैं office जा रहा हूँ" → "main office ja raha hu".
-        if Settings.isHinglish {
-            text = romanize(text)
-        }
-        return text
-    }
-
-    private func romanize(_ s: String) -> String {
-        let latin = s.applyingTransform(.toLatin, reverse: false) ?? s
-        let plain = latin.applyingTransform(.stripDiacritics, reverse: false) ?? latin
-        // ICU adds apostrophes for halant/virama joins — drop them for natural text.
-        return plain.replacingOccurrences(of: "'", with: "")
     }
 
     /// Map our locale ids to Whisper codes. We always TRANSCRIBE in the spoken
