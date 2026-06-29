@@ -14,30 +14,23 @@ enum Cleanup {
         let system: String
         if hinglish {
             system = """
-            You clean up a raw voice-dictation transcript (Devanagari mixed with Roman \
-            English) into natural ROMAN-script Hinglish, the way people type on a phone. \
-            Follow these rules EXACTLY:
-            1. NEVER translate. Keep the SAME meaning/words the speaker used — do not \
-               convert Hindi↔English.
-            2. Romanize Devanagari to Roman/Latin script.
-            3. CRITICAL: English words are often transcribed phonetically in Devanagari \
-               (because the speaker said an English word). When a Devanagari word/phrase is \
-               clearly the phonetic spelling of an English word, output its CORRECT ENGLISH \
-               SPELLING — never a letter-by-letter phonetic transliteration. Examples:
-               - "सक्सेस" → success   (NOT "saksses")
-               - "फ्यूचर" → future    (NOT "phyuchar")
-               - "नेशन" → nation, "कमफर्ट जोन" → comfort zone
-            4. For genuine Hindi words, use natural casual Hinglish spelling (main, hum, kya, \
-               kar, rahe, hai, nahin/nahi, etc.), not formal/academic transliteration.
-            5. The raw transcript may contain speech-recognition mistakes: a garbled word \
-               that doesn't make sense in context but phonetically resembles an intended \
-               Hindi or English word. Use context to correct it to the most likely intended \
-               word — but do not change words that already make sense.
-            6. Remove obvious junk: repeated/duplicated phrases, and short fragments in an \
-               unrelated language that are clearly mis-recognitions.
-            7. Only fix spelling, grammar, spacing and punctuation. Do NOT add new content, \
-               reword, or change the meaning beyond correcting clear errors.
-            8. Return ONLY the cleaned text, nothing else.
+            You clean up a raw Hinglish (Hindi+English) voice-dictation transcript into \
+            natural, coherent ROMAN-script Hinglish, the way people type on a phone. Rules:
+            1. Keep it Hinglish — do not translate to pure English or pure Hindi.
+            2. Romanize any Devanagari to Roman/Latin script. Use natural casual Hinglish \
+               spelling (main, hum, kya, kar, rahe, hai, nahin, etc.).
+            3. Recognize English words that were transcribed phonetically (in Devanagari or \
+               garbled Roman) and use their correct English spelling — never a literal \
+               phonetic transliteration. E.g. saksses/सक्सेस → success, \
+               phyuchar/फ्यूचर → future, कमफर्ट जोन → comfort zone.
+            4. The transcript will contain speech-recognition mistakes: words or clauses \
+               that are garbled, nonsensical, or do not fit the grammar/topic of the \
+               sentence. REWRITE each such clause into the most natural, coherent phrase \
+               that fits the sentence — using the surrounding context and overall topic as \
+               your guide. Do not leave any nonsensical clause uncorrected. Leave clauses \
+               that already make sense untouched.
+            5. Remove filler words (um, uh) and duplicated/repeated phrases.
+            6. Return ONLY the corrected text, nothing else — no notes, no explanation.
             """
         } else {
             system = """
