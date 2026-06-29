@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if [ -f whisper/whisper-cli ] && [ -f whisper/ggml-base.bin ]; then
+if [ -f whisper/whisper-cli ] && [ -f whisper/ggml-small.bin ]; then
     echo "✅ whisper/ already set up."
     exit 0
 fi
@@ -21,12 +21,12 @@ cmake -B build -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release \
     -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON >/dev/null
 cmake --build build --config Release -j --target whisper-cli >/dev/null
 
-echo "==> Downloading multilingual base model…"
-bash ./models/download-ggml-model.sh base >/dev/null
+echo "==> Downloading multilingual small model…"
+bash ./models/download-ggml-model.sh small >/dev/null
 
 cd ../..
 mkdir -p whisper
 cp whisper-build/whisper.cpp/build/bin/whisper-cli whisper/
-cp whisper-build/whisper.cpp/models/ggml-base.bin whisper/
+cp whisper-build/whisper.cpp/models/ggml-small.bin whisper/
 chmod +x whisper/whisper-cli
-echo "✅ whisper/ ready (whisper-cli + ggml-base.bin)."
+echo "✅ whisper/ ready (whisper-cli + ggml-small.bin)."

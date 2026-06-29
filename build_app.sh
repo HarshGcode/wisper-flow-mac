@@ -25,9 +25,9 @@ if [ -f tools/AppIcon.icns ]; then
 fi
 # Bundle the on-device Whisper engine (binary + model) so transcription needs
 # no API key and works offline. See tools/setup_whisper.sh to (re)create them.
-if [ -f whisper/whisper-cli ] && [ -f whisper/ggml-base.bin ]; then
+if [ -f whisper/whisper-cli ] && [ -f whisper/ggml-small.bin ]; then
     cp whisper/whisper-cli "${BUNDLE}/Contents/Resources/whisper-cli"
-    cp whisper/ggml-base.bin "${BUNDLE}/Contents/Resources/ggml-base.bin"
+    cp whisper/ggml-small.bin "${BUNDLE}/Contents/Resources/ggml-small.bin"
     chmod +x "${BUNDLE}/Contents/Resources/whisper-cli"
     echo "    bundled local Whisper engine"
 else

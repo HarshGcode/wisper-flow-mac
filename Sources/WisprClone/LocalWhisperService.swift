@@ -16,7 +16,7 @@ final class LocalWhisperService {
     static var isAvailable: Bool { binaryPath != nil && modelPath != nil }
 
     private static var binaryPath: String? { Bundle.main.path(forResource: "whisper-cli", ofType: nil) }
-    private static var modelPath: String? { Bundle.main.path(forResource: "ggml-base", ofType: "bin") }
+    private static var modelPath: String? { Bundle.main.path(forResource: "ggml-small", ofType: "bin") }
 
     func requestAuthorization(_ completion: @escaping (Bool) -> Void) {
         AVCaptureDevice.requestAccess(for: .audio) { ok in
@@ -85,22 +85,38 @@ final class LocalWhisperService {
             return ""
         }
         let data = out.fileHandleForReading.readDataToEndOfFile()
-        return (String(data: data, encoding: .utf8) ?? "")
+        var text = (String(data: data, encoding: .utf8) ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Hinglish: Whisper TRANSCRIBES accurately (Hindi in Devanagari). We then
+        // romanize the script to Latin deterministically (no translation, no key),
+        // keeping English words as-is. e.g. "मैं office जा रहा हूँ" → "main office ja raha hu".
+        if Settings.isHinglish {
+            text = romanize(text)
+        }
+        return text
     }
 
-    /// Map our locale ids to Whisper's 2-letter codes. Hinglish → en so Hindi is
-    /// romanized into Latin script.
+    private func romanize(_ s: String) -> String {
+        let latin = s.applyingTransform(.toLatin, reverse: false) ?? s
+        let plain = latin.applyingTransform(.stripDiacritics, reverse: false) ?? latin
+        // ICU adds apostrophes for halant/virama joins — drop them for natural text.
+        return plain.replacingOccurrences(of: "'", with: "")
+    }
+
+    /// Map our locale ids to Whisper codes. We always TRANSCRIBE in the spoken
+    /// language (never translate). Hinglish uses Hindi, then romanizes above.
     private func whisperLang(_ id: String) -> String {
         switch id {
-        case "hinglish": return "en"
+        case "hinglish": return "hi"
         case "hi-IN":    return "hi"
+        case "en-US", "en-IN": return "en"
         case "es-ES":    return "es"
         case "fr-FR":    return "fr"
         case "de-DE":    return "de"
         case "ar-SA":    return "ar"
         case "zh-CN":    return "zh"
-        default:         return "en"   // en-US, en-IN, fallback
+        default:         return "auto"
         }
     }
 }
